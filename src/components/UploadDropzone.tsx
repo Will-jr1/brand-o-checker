@@ -1,53 +1,33 @@
 import { useState } from 'react';
 import type { DragEvent, KeyboardEvent, ReactNode } from 'react';
-import { RefreshCw, AlertTriangle } from 'lucide-react';
 
 type Tone = 'emerald' | 'sky';
-
-// Classes completas (não montadas por string) para o Tailwind enxergá-las no build.
-const TONES: Record<Tone, { idle: string; drag: string; icon: string }> = {
-  emerald: {
-    idle: 'border-[#2E2E38] hover:border-emerald-500/50 hover:bg-emerald-500/5',
-    drag: 'border-emerald-400 bg-emerald-500/10',
-    icon: 'text-emerald-400'
-  },
-  sky: {
-    idle: 'border-[#2E2E38] hover:border-sky-500/50 hover:bg-sky-500/5',
-    drag: 'border-sky-400 bg-sky-500/10',
-    icon: 'text-sky-400'
-  }
-};
 
 interface UploadDropzoneProps {
   icon: ReactNode;
   title: string;
   hint: string;
   tone: Tone;
-  /** Decide se o arquivo solto é aceito (o seletor nativo já filtra via `accept`). */
   accept: (file: File) => boolean;
   rejectMessage: string;
   onFile: (file: File) => void;
-  /** Abre o seletor de arquivos (reaproveita o input escondido do card). */
   onBrowse: () => void;
   busy?: boolean;
   busyLabel?: string;
 }
 
 export default function UploadDropzone({
-  icon,
   title,
   hint,
-  tone,
   accept,
   rejectMessage,
   onFile,
   onBrowse,
   busy = false,
-  busyLabel = 'Lendo arquivo…'
+  busyLabel = 'LENDO ARQUIVO...'
 }: UploadDropzoneProps) {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const t = TONES[tone];
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -92,25 +72,43 @@ export default function UploadDropzone({
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
       }}
       onDrop={handleDrop}
-      className={`rounded-md border border-dashed px-3 py-3.5 flex items-center gap-3 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${
-        busy ? 'border-[#2E2E38] bg-[#0E0E11] cursor-wait' : `cursor-pointer ${dragging ? t.drag : `bg-[#0E0E11] ${t.idle}`}`
+      className={`border border-dashed px-3.5 py-3 flex items-center justify-between gap-3 text-left transition-colors outline-none focus-visible:bg-[#0A0A0A] focus-visible:text-white ${
+        busy
+          ? 'border-[#0A0A0A]/40 bg-[#F5F5F5] text-[#525252] cursor-wait'
+          : dragging
+          ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white cursor-pointer'
+          : 'border-[#0A0A0A]/60 bg-white text-[#0A0A0A] hover:border-[#0A0A0A] hover:bg-[#FAFAFA] cursor-pointer'
       }`}
     >
-      <div className={`shrink-0 ${busy ? 'text-[#A1A1AA]' : t.icon}`}>
-        {busy ? <RefreshCw size={18} className="animate-spin" /> : icon}
-      </div>
       <div className="min-w-0">
-        <div className="text-xs font-medium text-[#E4E4E7]">
-          {busy ? busyLabel : dragging ? 'Solte o arquivo aqui' : title}
+        <div className="font-mono text-[11px] uppercase tracking-[0.06em] font-medium">
+          {busy ? busyLabel : dragging ? 'SOLTE O ARQUIVO' : title}
         </div>
-        {!busy && <div className="text-[11px] font-mono text-[#71717A] mt-0.5">{hint}</div>}
+        {!busy && (
+          <div
+            className={`font-mono text-[10px] uppercase tracking-[0.04em] mt-0.5 ${
+              dragging ? 'text-white/70' : 'text-[#737373]'
+            }`}
+          >
+            {hint}
+          </div>
+        )}
         {error && !busy && (
-          <div className="mt-1 flex items-center gap-1 text-[11px] font-mono text-rose-300">
-            <AlertTriangle size={11} className="shrink-0" />
-            <span>{error}</span>
+          <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-[#DC2626]">
+            ERR // {error}
           </div>
         )}
       </div>
+
+      <span
+        className={`font-mono text-[10px] uppercase tracking-[0.08em] px-2 py-1 border shrink-0 ${
+          dragging
+            ? 'border-white text-white'
+            : 'border-[#0A0A0A] text-[#0A0A0A]'
+        }`}
+      >
+        {busy ? 'WAIT' : '+ FILE'}
+      </span>
     </div>
   );
 }

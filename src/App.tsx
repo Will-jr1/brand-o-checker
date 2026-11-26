@@ -1,36 +1,19 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  Upload,
-  FileText,
-  Image as ImageIcon,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  Sliders,
-  Code2,
-  Eye,
-  EyeOff,
-  Copy,
-  Check,
-  Sparkles,
-  Scan,
-  Layers,
-  Type,
-  Palette,
-  Compass,
-  RefreshCw,
-  ChevronRight,
-  Info,
-  Terminal
-} from 'lucide-react';
-import type { Status, SampleKey, Rgb, PaletteColor, BrandRules, PresetManual, ExtractedColor, PixelData, TypographyAnalysis, Annotation, ChecklistItem, AnalysisResult } from './types';
+import type {
+  Status,
+  SampleKey,
+  Rgb,
+  PaletteColor,
+  BrandRules,
+  PresetManual,
+  PixelData,
+  TypographyAnalysis,
+  Annotation,
+  ChecklistItem,
+  AnalysisResult
+} from './types';
 import { extractRulesFromPdfLocal } from './lib/pdfLocal';
 import UploadDropzone from './components/UploadDropzone';
-
-
-// ============================================================================
-// 1. DADOS DE EXEMPLO (MANUAIS DE MARCA & REGRAS JSON)
-// ============================================================================
 
 const PRESET_MANUALS: Record<string, PresetManual> = {
   aura_tech: {
@@ -106,10 +89,6 @@ const PRESET_MANUALS: Record<string, PresetManual> = {
   }
 };
 
-// ============================================================================
-// 2. GERADOR DE PEÇAS DE TESTE (CANVAS DATA URLS REALISTAS PARA EXTRAÇÃO REAL)
-// ============================================================================
-
 function generateSampleAssetDataUrl(type: SampleKey): string {
   const canvas = document.createElement('canvas');
   canvas.width = 900;
@@ -118,11 +97,9 @@ function generateSampleAssetDataUrl(type: SampleKey): string {
   if (!ctx) return '';
 
   if (type === 'aura_approved') {
-    // Fundo Obsidian Void (#090D16)
     ctx.fillStyle = '#090D16';
     ctx.fillRect(0, 0, 900, 600);
 
-    // Grid sutil técnico
     ctx.strokeStyle = '#1E293B';
     ctx.lineWidth = 1;
     for (let x = 60; x < 900; x += 60) {
@@ -132,15 +109,12 @@ function generateSampleAssetDataUrl(type: SampleKey): string {
       ctx.stroke();
     }
 
-    // Bloco geométrico Electric Cobalt (#2563EB)
     ctx.fillStyle = '#2563EB';
     ctx.fillRect(60, 170, 420, 260);
 
-    // Detalhe Cyber Mint (#10B981)
     ctx.fillStyle = '#10B981';
     ctx.fillRect(480, 170, 90, 260);
 
-    // Logo no canto superior esquerdo com área de respiro generosa (60px)
     ctx.fillStyle = '#F8FAFC';
     ctx.beginPath();
     ctx.arc(76, 76, 16, 0, Math.PI * 2);
@@ -152,31 +126,25 @@ function generateSampleAssetDataUrl(type: SampleKey): string {
     ctx.font = '700 20px monospace';
     ctx.fillText('AURA TECH', 104, 83);
 
-    // Título principal em Pure Signal (#F8FAFC)
     ctx.fillStyle = '#F8FAFC';
     ctx.font = '700 54px sans-serif';
     ctx.fillText('INFRAESTRUTURA', 88, 255);
     ctx.fillText('AUTÔNOMA Q4', 88, 318);
 
-    // Subtítulo com bom contraste
     ctx.fillStyle = '#E2E8F0';
     ctx.font = '400 20px sans-serif';
     ctx.fillText('Arquitetura determinística para sistemas críticos.', 88, 375);
 
-    // Tag inferior
     ctx.fillStyle = '#10B981';
     ctx.font = '700 15px monospace';
     ctx.fillText('RELEASE // 2026.04', 60, 520);
   } else if (type === 'aura_deviations') {
-    // Fundo fora do manual (Roxo/Magenta escuro #2E1065)
     ctx.fillStyle = '#2E1065';
     ctx.fillRect(0, 0, 900, 600);
 
-    // Bloco grande com cor fora da paleta (Amarelo/Laranja #F97316)
     ctx.fillStyle = '#F97316';
     ctx.fillRect(40, 140, 820, 310);
 
-    // Logo colada na borda inferior direita (violando área de respiro!)
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
     ctx.arc(745, 578, 12, 0, Math.PI * 2);
@@ -184,53 +152,43 @@ function generateSampleAssetDataUrl(type: SampleKey): string {
     ctx.font = '700 16px monospace';
     ctx.fillText('AURA TECH', 765, 583);
 
-    // Título em fonte serifada/itálica (proibida no manual)
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'italic 700 56px Georgia, serif';
     ctx.fillText('SUPER PROMOÇÃO!!', 70, 235);
 
-    // Subtítulo com BAIXO CONTRASTE (laranja claro sobre laranja #FDBA74)
     ctx.fillStyle = '#FDBA74';
     ctx.font = '600 24px Georgia, serif';
     ctx.fillText('Aproveite agora antes que acabe o estoque!', 70, 295);
 
-    // Selo extra fora de padrão
     ctx.fillStyle = '#EC4899';
     ctx.fillRect(70, 340, 240, 56);
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '700 18px sans-serif';
     ctx.fillText('50% OFF IMPERDÍVEL', 88, 374);
   } else if (type === 'multiverso_approved') {
-    // Fundo PapelCru Warm (#F4EFE6)
     ctx.fillStyle = '#F4EFE6';
     ctx.fillRect(0, 0, 900, 600);
 
-    // Linhas de grid suíço
     ctx.strokeStyle = '#18181B';
     ctx.lineWidth = 2;
     ctx.strokeRect(56, 56, 788, 488);
 
-    // Bloco Terracota Vivo (#D94E34)
     ctx.fillStyle = '#D94E34';
     ctx.fillRect(540, 56, 304, 488);
 
-    // Logo com respiro amplo
     ctx.fillStyle = '#18181B';
     ctx.font = '700 22px Georgia, serif';
     ctx.fillText('M // MULTIVERSO', 88, 108);
 
-    // Título editorial
     ctx.fillStyle = '#18181B';
     ctx.font = '700 52px Georgia, serif';
     ctx.fillText('CADERNOS DE', 88, 240);
     ctx.fillText('ARQUITETURA', 88, 302);
     ctx.fillText('CONTEMPORÂNEA', 88, 364);
 
-    // Corpo
     ctx.font = '400 19px sans-serif';
     ctx.fillText('Edição 14 • Ensaios sobre forma, matéria e cidade.', 88, 440);
 
-    // Detalhe claro no bloco terracota
     ctx.fillStyle = '#F4EFE6';
     ctx.font = '700 18px monospace';
     ctx.fillText('ISSN 2984-019X', 580, 110);
@@ -238,10 +196,6 @@ function generateSampleAssetDataUrl(type: SampleKey): string {
 
   return canvas.toDataURL('image/png');
 }
-
-// ============================================================================
-// 3. MOTOR MATEMÁTICO DE CORES, DELTA-E & CONTRASTE WCAG (CLIENT-SIDE REAL)
-// ============================================================================
 
 function hexToRgb(hex: string): Rgb {
   const clean = hex.replace('#', '');
@@ -269,7 +223,6 @@ function rgbToHex(r: number, g: number, b: number): string {
   );
 }
 
-// Conversão RGB -> CIE LAB para cálculo perceptual real Delta-E (CIE76)
 function rgbToLab({ r, g, b }: Rgb) {
   let rNorm = r / 255;
   let gNorm = g / 255;
@@ -303,7 +256,6 @@ function calculateDeltaE(hex1: string, hex2: string): number {
   return Math.round(Math.sqrt(dL * dL + da * da + db * db) * 10) / 10;
 }
 
-// Cálculo oficial de luminância relativa e razão de contraste WCAG 2.1
 function getRelativeLuminance({ r, g, b }: Rgb): number {
   const [rs, gs, bs] = [r, g, b].map((v) => {
     const s = v / 255;
@@ -320,14 +272,13 @@ function calculateWcagContrast(hex1: string, hex2: string): number {
   return Math.round(((brightest + 0.05) / (darkest + 0.05)) * 100) / 100;
 }
 
-// Extração real de pixels via HTML5 Canvas com quantização e agrupamento perceptual
 function extractDominantColorsFromImage(
   imgElement: HTMLImageElement,
   officialPalette: PaletteColor[],
   toleranceDeltaE: number
 ): PixelData {
   const canvas = document.createElement('canvas');
-  const maxDim = 240; // Amostragem rápida e fiel
+  const maxDim = 240;
   const ratio = Math.min(maxDim / imgElement.naturalWidth, maxDim / imgElement.naturalHeight, 1);
   canvas.width = Math.max(1, Math.round(imgElement.naturalWidth * ratio));
   canvas.height = Math.max(1, Math.round(imgElement.naturalHeight * ratio));
@@ -346,11 +297,9 @@ function extractDominantColorsFromImage(
     const b = imageData[i + 2];
     const a = imageData[i + 3];
 
-    // Ignorar pixels semitransparentes (anti-aliasing de borda)
     if (a < 220) continue;
 
     totalValidPixels++;
-    // Quantização suave em passos de 8 para absorver ruído de compressão JPG
     const qr = Math.min(255, Math.round(r / 8) * 8);
     const qg = Math.min(255, Math.round(g / 8) * 8);
     const qb = Math.min(255, Math.round(b / 8) * 8);
@@ -367,7 +316,6 @@ function extractDominantColorsFromImage(
     }
   }
 
-  // Ordenar por frequência e mesclar clusters muito próximos (Delta-E < 9)
   const rawClusters = Array.from(buckets.values())
     .sort((a, b) => b.count - a.count)
     .slice(0, 35)
@@ -395,7 +343,6 @@ function extractDominantColorsFromImage(
     .map((item) => {
       const percentage = Math.max(0.5, Math.round((item.count / Math.max(1, totalValidPixels)) * 1000) / 10);
 
-      // Encontrar cor oficial mais próxima no manual
       let closestOfficial = officialPalette[0];
       let minDeltaE = Infinity;
 
@@ -418,7 +365,6 @@ function extractDominantColorsFromImage(
       };
     });
 
-  // Calcular melhor contraste entre as cores extraídas (ex: fundo dominante vs acento/texto)
   let bestContrast = 1;
   let contrastPair = [topColors[0]?.extractedHex || '#000000', topColors[1]?.extractedHex || '#FFFFFF'];
 
@@ -440,18 +386,8 @@ function extractDominantColorsFromImage(
   };
 }
 
-// ============================================================================
-// 4. COMPONENTE PRINCIPAL: BRAND-O-CHECKER MVP
-// ============================================================================
-
-// ============================================================================
-// 3.1 LEITURA REAL DO MANUAL (PDF -> regras JSON via /api/extract-manual)
-// ============================================================================
-
-// Funções da Vercel aceitam no máximo 4,5 MB de corpo; o PDF vai cru (sem base64).
 const MAX_PDF_BYTES = 4_200_000;
 
-// Validação de arquivos soltos nas dropzones (o seletor nativo já filtra via `accept`)
 const isManualFile = (f: File) => /\.(pdf|json)$/i.test(f.name);
 const isImageFile = (f: File) => /^image\/(png|jpeg|webp)$/.test(f.type);
 
@@ -472,7 +408,7 @@ async function extractRulesFromPdf(file: File): Promise<{ rules: BrandRules; war
   try {
     data = await res.json();
   } catch {
-    // resposta não-JSON (ex.: 404 do Vite em dev)
+    // resposta não-JSON
   }
 
   if (res.status === 404 && !data) {
@@ -486,7 +422,6 @@ async function extractRulesFromPdf(file: File): Promise<{ rules: BrandRules; war
 }
 
 export default function App() {
-  // Estado do Manual de Marca
   const [selectedManualKey, setSelectedManualKey] = useState('aura_tech');
   const [customManualName, setCustomManualName] = useState<string | null>(null);
   const [rulesJsonText, setRulesJsonText] = useState(() =>
@@ -494,17 +429,14 @@ export default function App() {
   );
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [showJsonDrawer, setShowJsonDrawer] = useState(false);
-  // false = leitura local (grátis, só cores e fontes); true = leitura por IA (/api, precisa de chave e crédito)
   const [useAiReading, setUseAiReading] = useState(false);
   const [manualStatus, setManualStatus] = useState<{
     state: 'idle' | 'loading' | 'ok' | 'error';
     message: string;
   }>({ state: 'idle', message: '' });
 
-  // Estado da Peça Criativa (Asset)
   const [assetSource, setAssetSource] = useState<'preset' | 'upload'>('preset');
   const [selectedSampleKey, setSelectedSampleKey] = useState<SampleKey | 'custom_upload'>('aura_approved');
-  // Já nasce com o exemplo (evita um flash do estado vazio); no SSR/sem DOM começa vazio
   const [assetDataUrl, setAssetDataUrl] = useState(() =>
     typeof document === 'undefined' ? '' : generateSampleAssetDataUrl('aura_approved')
   );
@@ -514,7 +446,6 @@ export default function App() {
     sizeKb: 142
   });
 
-  // Estado da Análise & Diagnóstico
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [showBoundingBoxes, setShowBoundingBoxes] = useState(true);
@@ -525,7 +456,6 @@ export default function App() {
   const assetInputRef = useRef<HTMLInputElement>(null);
   const manualInputRef = useRef<HTMLInputElement>(null);
 
-  // Parse seguro do JSON de regras ativo
   const activeRules = useMemo<BrandRules>(() => {
     try {
       const parsed: BrandRules = JSON.parse(rulesJsonText);
@@ -537,20 +467,17 @@ export default function App() {
     }
   }, [rulesJsonText, selectedManualKey]);
 
-  // Inicializar imagem de demonstração no carregamento
   useEffect(() => {
     const url = generateSampleAssetDataUrl('aura_approved');
     setAssetDataUrl(url);
   }, []);
 
-  // Trocar manual preset
   const handleSelectManualPreset = (key: string) => {
     setSelectedManualKey(key);
     setCustomManualName(null);
     setManualStatus({ state: 'idle', message: '' });
     setRulesJsonText(JSON.stringify(PRESET_MANUALS[key].rules, null, 2));
 
-    // Se estiver usando preset de peça, ajustar para um exemplo correspondente ao manual
     if (assetSource === 'preset') {
       if (key === 'multiverso_editorial') {
         handleLoadSampleAsset('multiverso_approved');
@@ -560,16 +487,14 @@ export default function App() {
     }
   };
 
-  // Upload de manual: .json carrega as regras direto; .pdf é lido por IA no servidor
   const handleManualFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const file = input.files?.[0];
-    input.value = ''; // permite reenviar o mesmo arquivo
+    input.value = '';
     if (file) void processManualFile(file);
   };
 
   const processManualFile = async (file: File) => {
-
     if (file.name.toLowerCase().endsWith('.json')) {
       setCustomManualName(file.name);
       setManualStatus({ state: 'idle', message: '' });
@@ -588,27 +513,29 @@ export default function App() {
 
     setManualStatus({
       state: 'loading',
-      message: useAiReading ? `Lendo ${file.name} com IA… (pode levar até ~1 min)` : `Lendo ${file.name}…`
+      message: useAiReading ? `LENDO ${file.name} VIA IA...` : `LENDO ${file.name}...`
     });
     try {
       const { rules, warnings } = useAiReading
         ? await extractRulesFromPdf(file)
         : await extractRulesFromPdfLocal(file, (done, total) =>
-            setManualStatus({ state: 'loading', message: `Lendo ${file.name}… página ${Math.min(done + 1, total)} de ${total}` })
+            setManualStatus({
+              state: 'loading',
+              message: `LENDO ${file.name} // PÁG ${Math.min(done + 1, total)}/${total}`
+            })
           );
       setCustomManualName(file.name);
       setRulesJsonText(JSON.stringify(rules, null, 2));
-      setShowJsonDrawer(true); // abre o JSON para revisão humana
+      setShowJsonDrawer(true);
       const intro = useAiReading
         ? 'Regras extraídas por IA. Revise o JSON antes de confiar no score.'
-        : 'Leitura local: só cores (hex/RGB) e fontes embutidas. Nomes das cores são palpite; papéis, logo, contraste e tom de voz não são lidos. Complete e revise o JSON.';
+        : 'Leitura local: só cores (hex/RGB) e fontes embutidas. Nomes das cores são palpite; papéis, logo, contraste e tom de voz não são lidos. Revise o JSON.';
       setManualStatus({ state: 'ok', message: [intro, ...warnings].join(' ') });
     } catch (err) {
       setManualStatus({ state: 'error', message: err instanceof Error ? err.message : String(err) });
     }
   };
 
-  // Carregar peça de exemplo
   const handleLoadSampleAsset = (sampleKey: SampleKey) => {
     setAssetSource('preset');
     setSelectedSampleKey(sampleKey);
@@ -627,7 +554,6 @@ export default function App() {
     });
   };
 
-  // Upload real de PNG/JPG do computador do usuário
   const handleAssetUpload = (file: File | undefined) => {
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
@@ -644,7 +570,6 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  // Executar auditoria completa sempre que a imagem carregar ou regras mudarem
   const runBrandAudit = () => {
     const img = imgRef.current;
     if (!img || !img.complete || img.naturalWidth === 0) return;
@@ -657,10 +582,8 @@ export default function App() {
       const toleranceDeltaE = activeRules.palette?.toleranceDeltaE ?? 14;
       const minWcag = activeRules.contrast?.minWcagRatio ?? 4.5;
 
-      // 1. Extração real de pixels via Canvas
       const pixelData = extractDominantColorsFromImage(img, officialPalette, toleranceDeltaE);
 
-      // Calcular aderência cromática ponderada pela área (%) de cada cor extraída
       let compliantArea = 0;
       let totalEvaluatedArea = 0;
       pixelData.colors.forEach((c) => {
@@ -675,14 +598,11 @@ export default function App() {
       const colorComplianceRatio = totalEvaluatedArea > 0 ? compliantArea / totalEvaluatedArea : 0;
       const colorScore = Math.min(100, Math.round(colorComplianceRatio * 100));
 
-      // 2. Diagnóstico Contextual (Combina dados reais do pixel + heurísticas visuais da peça)
       const isKnownDeviantSample = assetSource === 'preset' && selectedSampleKey === 'aura_deviations';
 
-      // Pillar 1: Crítico (40%) — Paleta + Logo/Respiro
       const logoClearspaceScore = isKnownDeviantSample ? 38 : colorScore > 75 ? 96 : 82;
       const criticalScore = Math.round(colorScore * 0.6 + logoClearspaceScore * 0.4);
 
-      // Pillar 2: Estrutural (35%) — Tipografia (probabilística PNG) + Contraste WCAG
       const contrastPass = pixelData.bestContrast >= minWcag && !isKnownDeviantSample;
       const effectiveContrast = isKnownDeviantSample ? 2.45 : pixelData.bestContrast;
       const contrastScore = contrastPass
@@ -721,16 +641,12 @@ export default function App() {
           : 42;
 
       const structuralScore = Math.round(typoScore * 0.55 + contrastScore * 0.45);
-
-      // Pillar 3: Estético & Verbal (25%) — Direção de Arte & Tom de Voz
       const aestheticScore = isKnownDeviantSample ? 45 : colorScore >= 75 ? 92 : 76;
 
-      // Score Final Ponderado (40% Crítico + 35% Estrutural + 25% Estético)
       const totalScore = Math.round(
         criticalScore * 0.4 + structuralScore * 0.35 + aestheticScore * 0.25
       );
 
-      // Gerar Bounding Boxes interativos para inspeção visual sobre a peça
       const offBrandColor = pixelData.colors.find((c) => !c.isCompliant);
       const annotations: Annotation[] = [];
 
@@ -740,7 +656,7 @@ export default function App() {
             id: 'ann-color',
             type: 'fail',
             pillar: 'Crítico • Paleta',
-            label: `Cor fora do manual (${offBrandColor?.extractedHex || '#F97316'})`,
+            label: `COR OFF-BRAND ${offBrandColor?.extractedHex || '#F97316'}`,
             detail: `Delta-E ${offBrandColor?.deltaE || 58.4} excede tolerância máxima de ${toleranceDeltaE}. Substituir por ${officialPalette[1]?.hex || '#2563EB'}.`,
             box: { top: '23%', left: '4.5%', width: '91%', height: '51%' }
           },
@@ -748,7 +664,7 @@ export default function App() {
             id: 'ann-typo',
             type: 'fail',
             pillar: 'Estrutural • Tipografia',
-            label: 'Família Serifada / Tom Promocional',
+            label: 'TIPO / TOM FORA DO GUIA',
             detail: `Detectada fonte serifada itálica proibida e expressão "IMPERDÍVEL" fora do tom analítico da marca.`,
             box: { top: '31%', left: '7%', width: '66%', height: '14%' }
           },
@@ -756,7 +672,7 @@ export default function App() {
             id: 'ann-contrast',
             type: 'warn',
             pillar: 'Estrutural • Contraste WCAG',
-            label: 'Contraste Insuficiente (2.45:1)',
+            label: 'CONTRASTE 2.45:1',
             detail: `Subtítulo laranja claro sobre fundo laranja viola o mínimo WCAG AA (${minWcag}:1).`,
             box: { top: '44%', left: '7%', width: '68%', height: '8%' }
           },
@@ -764,19 +680,18 @@ export default function App() {
             id: 'ann-logo',
             type: 'fail',
             pillar: 'Crítico • Área de Respiro',
-            label: 'Violação de Margem da Logo',
+            label: 'RESPIRO LOGO VIOLADO',
             detail: `Assinatura encostada na borda inferior (margem < 2%). O manual exige ${activeRules.logo?.clearspaceModule}.`,
             box: { top: '92%', left: '80%', width: '18%', height: '7%' }
           }
         );
       } else {
-        // Anotações dinâmicas para peças aprovadas ou uploads customizados
         if (offBrandColor) {
           annotations.push({
             id: 'ann-color-warn',
             type: 'warn',
             pillar: 'Crítico • Paleta',
-            label: `Desvio Cromático (${offBrandColor.extractedHex})`,
+            label: `DESVIO ${offBrandColor.extractedHex}`,
             detail: `Ocupa ${offBrandColor.percentage}% da área com Delta-E ${offBrandColor.deltaE} em relação a ${offBrandColor.closestOfficial.name} (${offBrandColor.closestOfficial.hex}).`,
             box: { top: '18%', left: '12%', width: '76%', height: '58%' }
           });
@@ -785,7 +700,7 @@ export default function App() {
             id: 'ann-palette-ok',
             type: 'pass',
             pillar: 'Crítico • Paleta',
-            label: `Paleta Oficial Validada (${colorScore}%)`,
+            label: `PALETA OK (${colorScore}%)`,
             detail: `Todas as cores dominantes estão dentro do limiar perceptual Delta-E ≤ ${toleranceDeltaE}.`,
             box: { top: '26%', left: '7%', width: '56%', height: '46%' }
           });
@@ -795,7 +710,7 @@ export default function App() {
           id: 'ann-logo-ok',
           type: 'pass',
           pillar: 'Crítico • Assinatura',
-          label: 'Área de Respiro Conformidade OK',
+          label: 'RESPIRO LOGO OK',
           detail: `Margem de segurança respeita o módulo de ${activeRules.logo?.clearspaceModule || '1.5x'}.`,
           box: { top: '8%', left: '6%', width: '24%', height: '10%' }
         });
@@ -804,58 +719,57 @@ export default function App() {
           id: 'ann-typo-ok',
           type: typographyAnalysis.matchStatus === 'pass' ? 'pass' : 'warn',
           pillar: 'Estrutural • Tipografia & Contraste',
-          label: `Contraste ${effectiveContrast}:1 • Confiança Fonte ${typographyAnalysis.confidence}%`,
+          label: `WCAG ${effectiveContrast}:1 // FONT ${typographyAnalysis.confidence}%`,
           detail: typographyAnalysis.note,
           box: { top: '34%', left: '9%', width: '52%', height: '28%' }
         });
       }
 
-      // Checklist detalhado de itens
       const checklist: ChecklistItem[] = [
         {
           id: 'chk-palette',
-          pillar: 'Crítico (40%)',
-          title: 'Aderência à Paleta Cromática Oficial',
+          pillar: 'CRÍTICO 40%',
+          title: 'Paleta Cromática',
           status: colorScore >= 85 ? 'pass' : colorScore >= 60 ? 'warn' : 'fail',
-          metric: `${colorScore}% aderente`,
+          metric: `${colorScore}% MATCH`,
           description: offBrandColor
             ? `Detectado ${offBrandColor.extractedHex} (${offBrandColor.percentage}% da peça) com Delta-E ${offBrandColor.deltaE} vs. ${offBrandColor.closestOfficial.hex}.`
             : `Cores extraídas via pixel sampling batem com ${officialPalette.map((c) => c.hex).join(', ')}.`
         },
         {
           id: 'chk-logo',
-          pillar: 'Crítico (40%)',
-          title: 'Área de Respiro & Aplicação de Logo',
+          pillar: 'CRÍTICO 40%',
+          title: 'Área de Respiro & Logo',
           status: logoClearspaceScore >= 85 ? 'pass' : logoClearspaceScore >= 65 ? 'warn' : 'fail',
-          metric: isKnownDeviantSample ? 'Margem < 2%' : 'Respiro OK',
+          metric: isKnownDeviantSample ? 'MARGEM < 2%' : 'RESPIRO OK',
           description: isKnownDeviantSample
             ? `Assinatura no canto inferior direito invade a zona de proteção (${activeRules.logo?.clearspaceModule}).`
             : `Zona de proteção preservada e aplicação sobre fundo autorizado.`
         },
         {
           id: 'chk-typo',
-          pillar: 'Estrutural (35%)',
-          title: 'Tipografia & Hierarquia Escalar (PNG)',
+          pillar: 'ESTRUTURAL 35%',
+          title: 'Tipografia & Hierarquia',
           status: typographyAnalysis.matchStatus,
-          metric: `${typographyAnalysis.confidence}% confiança`,
+          metric: `CONF ${typographyAnalysis.confidence}%`,
           description: typographyAnalysis.note
         },
         {
           id: 'chk-contrast',
-          pillar: 'Estrutural (35%)',
-          title: 'Legibilidade e Contraste WCAG AA',
+          pillar: 'ESTRUTURAL 35%',
+          title: 'Contraste WCAG AA',
           status: contrastPass ? 'pass' : 'fail',
-          metric: `${effectiveContrast}:1 (Mín. ${minWcag}:1)`,
+          metric: `${effectiveContrast}:1 (MIN ${minWcag}:1)`,
           description: contrastPass
             ? `Relação de luminância entre ${pixelData.contrastPair[0]} e ${pixelData.contrastPair[1]} garante leitura nítida.`
             : `Contraste insuficiente entre texto secundário e plano de fundo. Aumentar diferença de luminância.`
         },
         {
           id: 'chk-art',
-          pillar: 'Estético & Verbal (25%)',
+          pillar: 'ESTÉTICO 25%',
           title: 'Direção de Arte & Tom de Voz',
           status: aestheticScore >= 85 ? 'pass' : aestheticScore >= 65 ? 'warn' : 'fail',
-          metric: `${aestheticScore}/100 pts`,
+          metric: `${aestheticScore}/100`,
           description: isKnownDeviantSample
             ? `Apelo promocional agressivo ("SUPER PROMOÇÃO!! / IMPERDÍVEL") conflita com o tom ${activeRules.artDirection?.toneOfVoice}`
             : `Composição alinhada às diretrizes: ${activeRules.artDirection?.style}`
@@ -880,7 +794,6 @@ export default function App() {
     }, 320);
   };
 
-  // Re-executar auditoria se regras JSON mudarem após o carregamento da imagem
   useEffect(() => {
     if (imgRef.current && imgRef.current.complete) {
       runBrandAudit();
@@ -888,7 +801,6 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rulesJsonText]);
 
-  // Gerar e copiar relatório Markdown para Jira / Slack / Notion
   const handleCopyMarkdownReport = () => {
     if (!analysisResult) return;
     const statusLabel =
@@ -927,110 +839,92 @@ export default function App() {
     setTimeout(() => setCopiedReport(false), 2500);
   };
 
-  // Helpers visuais de status
-  const getScoreTheme = (score: number) => {
-    if (score >= 85) {
-      return {
-        label: 'APROVADO ON-BRAND',
-        color: 'text-emerald-400',
-        bg: 'bg-emerald-500/10',
-        border: 'border-emerald-500/40',
-        bar: 'bg-emerald-500'
-      };
-    }
-    if (score >= 65) {
-      return {
-        label: 'ATENÇÃO • AJUSTES',
-        color: 'text-amber-400',
-        bg: 'bg-amber-500/10',
-        border: 'border-amber-500/40',
-        bar: 'bg-amber-500'
-      };
-    }
-    return {
-      label: 'REPROVADO • DESVIOS',
-      color: 'text-rose-400',
-      bg: 'bg-rose-500/10',
-      border: 'border-rose-500/40',
-      bar: 'bg-rose-500'
-    };
+  const getScoreVerdict = (score: number) => {
+    if (score >= 85) return { code: 'PASS', textClass: 'text-[#0A0A0A]', barClass: 'bg-[#0A0A0A]' };
+    if (score >= 65) return { code: 'WARN', textClass: 'text-[#B45309]', barClass: 'bg-[#B45309]' };
+    return { code: 'FAIL', textClass: 'text-[#DC2626]', barClass: 'bg-[#DC2626]' };
   };
 
-  const renderStatusIcon = (status: Status, size = 16) => {
-    if (status === 'pass') return <CheckCircle2 size={size} className="text-emerald-400 shrink-0" />;
-    if (status === 'warn') return <AlertTriangle size={size} className="text-amber-400 shrink-0" />;
-    return <XCircle size={size} className="text-rose-400 shrink-0" />;
+  const renderStatusTag = (status: Status) => {
+    if (status === 'pass') {
+      return (
+        <span className="font-mono text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 border border-[#0A0A0A] bg-[#0A0A0A] text-white">
+          PASS
+        </span>
+      );
+    }
+    if (status === 'warn') {
+      return (
+        <span className="font-mono text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 border border-[#B45309] text-[#B45309]">
+          WARN
+        </span>
+      );
+    }
+    return (
+      <span className="font-mono text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 border border-[#DC2626] bg-[#DC2626] text-white">
+        FAIL
+      </span>
+    );
   };
 
-  const scoreTheme = analysisResult ? getScoreTheme(analysisResult.totalScore) : null;
+  const verdict = analysisResult ? getScoreVerdict(analysisResult.totalScore) : null;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-[#FAFAFA] font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
-      {/* TOP BAR TELEMETRIA */}
-      <header className="border-b border-[#242429] bg-[#0D0D10]/90 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-[#151519] border border-[#2E2E36] flex items-center justify-center text-emerald-400">
-              <Scan size={18} />
-            </div>
-            <div className="flex items-baseline gap-2.5">
-              <span className="font-bold tracking-tight text-base sm:text-lg">
-                BRAND-O-CHECKER
-              </span>
-              <span className="hidden sm:inline-block font-mono text-[11px] px-1.5 py-0.5 rounded bg-[#18181D] border border-[#2A2A32] text-[#A1A1AA]">
-                MVP v0.4 // PIXEL + RULES ENGINE
-              </span>
-            </div>
+    <div className="min-h-screen bg-white text-[#0A0A0A] font-sans antialiased">
+      {/* TOP BAR (48px — GRID SECO) */}
+      <header className="sticky top-0 z-30 h-12 bg-white border-b border-[#0A0A0A]">
+        <div className="max-w-[1440px] mx-auto h-full px-4 sm:px-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <span className="font-mono text-xs font-bold uppercase tracking-[0.12em] whitespace-nowrap">
+              BRAND-O-CHECKER
+            </span>
+            <span className="hidden sm:inline font-mono text-[10px] uppercase tracking-[0.08em] text-[#737373] truncate">
+              v0.4 // PIXEL + RULES ENGINE
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setShowJsonDrawer(!showJsonDrawer)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono border transition-colors ${
+              className={`font-mono text-[11px] uppercase tracking-[0.08em] px-3 py-1 border transition-colors ${
                 showJsonDrawer
-                  ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-300'
-                  : 'bg-[#141418] border-[#27272E] text-[#D4D4D8] hover:border-[#3F3F46]'
+                  ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
+                  : 'border-[#0A0A0A] bg-white text-[#0A0A0A] hover:bg-[#F5F5F5]'
               }`}
             >
-              <Code2 size={14} />
-              <span className="hidden md:inline">Regras JSON</span>
-              <span className="md:hidden">JSON</span>
+              [ JSON ]
             </button>
 
             <button
               onClick={runBrandAudit}
               disabled={isAnalyzing}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-xs font-semibold bg-[#FAFAFA] text-[#0A0A0B] hover:bg-emerald-400 hover:text-[#050505] transition-colors disabled:opacity-50"
+              className="font-mono text-[11px] uppercase tracking-[0.08em] px-3 py-1 border border-[#0A0A0A] bg-[#0A0A0A] text-white hover:bg-[#262626] transition-colors disabled:opacity-40"
             >
-              <RefreshCw size={13} className={isAnalyzing ? 'animate-spin' : ''} />
-              <span>Reauditar</span>
+              {isAnalyzing ? 'RUNNING...' : 'RUN AUDIT'}
             </button>
           </div>
         </div>
       </header>
 
-      {/* DRAWER EXPANSÍVEL DO JSON DE GOVERNANÇA DO MANUAL */}
+      {/* DRAWER DE REGRAS JSON */}
       {showJsonDrawer && (
-        <div className="border-b border-[#242429] bg-[#0E0E12]">
+        <div className="border-b border-[#0A0A0A] bg-[#FAFAFA]">
           <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-              <div className="flex items-center gap-2">
-                <Terminal size={15} className="text-emerald-400" />
-                <span className="text-xs font-mono uppercase tracking-wider text-[#D4D4D8]">
-                  Schema de Governança Extraído do Manual (Editável ao vivo)
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs font-mono">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+              <span className="font-mono text-[11px] uppercase tracking-[0.08em] font-medium">
+                00 // GOVERNANCE SCHEMA (LIVE JSON)
+              </span>
+              <div className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.06em]">
                 {jsonError ? (
-                  <span className="text-rose-400">Erro de sintaxe JSON: {jsonError}</span>
+                  <span className="text-[#DC2626]">JSON ERR: {jsonError}</span>
                 ) : (
-                  <span className="text-emerald-400">● JSON válido — alterações recalculam o score automaticamente</span>
+                  <span className="text-[#525252]">VALID SCHEMA — AUTO RECALCULATE ACTIVE</span>
                 )}
                 <button
                   onClick={() => setShowJsonDrawer(false)}
-                  className="text-[#A1A1AA] hover:text-white underline"
+                  className="underline hover:opacity-70"
                 >
-                  Fechar
+                  CLOSE
                 </button>
               </div>
             </div>
@@ -1039,41 +933,34 @@ export default function App() {
               onChange={(e) => setRulesJsonText(e.target.value)}
               rows={11}
               spellCheck={false}
-              className="w-full bg-[#09090B] border border-[#27272E] rounded p-3 font-mono text-xs text-emerald-300 focus:outline-none focus:border-emerald-500/60 leading-relaxed"
+              className="w-full bg-white border border-[#0A0A0A] p-3 font-mono text-xs text-[#0A0A0A] focus:outline-none leading-relaxed"
             />
           </div>
         </div>
       )}
 
-      {/* CONTAINER PRINCIPAL */}
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* SEÇÃO SUPERIOR: OS 2 SLOTS DE INPUT (MANUAL + PEÇA) */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* SLOT 1: MANUAL DE MARCA */}
-          <div className="bg-[#121215] border border-[#242429] rounded-lg p-4 sm:p-5 flex flex-col justify-between gap-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#1C1C22] border border-[#2E2E38] text-[#A1A1AA]">
-                  INPUT 01
-                </span>
-                <div>
-                  <h2 className="text-sm font-semibold text-[#FAFAFA] flex items-center gap-2">
-                    <FileText size={15} className="text-emerald-400" />
-                    Manual de Marca (Regras)
-                  </h2>
-                  <p className="text-xs text-[#A1A1AA]">
-                    Selecione um brandbook indexado ou suba um PDF / JSON de regras
-                  </p>
+      {/* LAYOUT PRINCIPAL EM GRID DE 1px */}
+      <main className="max-w-[1440px] mx-auto border-x border-b border-[#0A0A0A]">
+        {/* LINHA 01: DOIS SLOTS DE INPUT */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 border-b border-[#0A0A0A]">
+          {/* SLOT 01: MANUAL DE MARCA */}
+          <div className="p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-[#0A0A0A] flex flex-col justify-between gap-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#737373]">
+                  01 / BRANDBOOK RULES
                 </div>
+                <h2 className="text-sm font-semibold tracking-tight uppercase mt-0.5">
+                  Manual de Marca
+                </h2>
               </div>
 
               <button
                 onClick={() => manualInputRef.current?.click()}
                 disabled={manualStatus.state === 'loading'}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-[#1A1A20] hover:bg-[#24242C] border border-[#2E2E38] text-xs font-mono text-[#E4E4E7] transition-colors shrink-0 disabled:opacity-50"
+                className="font-mono text-[10px] uppercase tracking-[0.08em] px-2.5 py-1 border border-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white transition-colors shrink-0 disabled:opacity-40"
               >
-                <Upload size={13} />
-                <span>Subir PDF/JSON</span>
+                UPLOAD PDF/JSON
               </button>
               <input
                 ref={manualInputRef}
@@ -1084,26 +971,25 @@ export default function App() {
               />
             </div>
 
-            {/* Presets de Manuais + Preview Rápido da Paleta Oficial */}
             <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 border border-[#0A0A0A] divide-y sm:divide-y-0 sm:divide-x divide-[#0A0A0A]">
                 {Object.values(PRESET_MANUALS).map((manual) => {
                   const active = selectedManualKey === manual.id && !customManualName;
                   return (
                     <button
                       key={manual.id}
                       onClick={() => handleSelectManualPreset(manual.id)}
-                      className={`text-left p-2.5 rounded border transition-all ${
+                      className={`p-3 text-left transition-colors ${
                         active
-                          ? 'bg-[#18181F] border-emerald-500/60 shadow-[0_0_0_1px_rgba(16,185,129,0.2)]'
-                          : 'bg-[#0E0E11] border-[#222228] hover:border-[#34343E]'
+                          ? 'bg-[#0A0A0A] text-white'
+                          : 'bg-white text-[#0A0A0A] hover:bg-[#F5F5F5]'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-xs font-semibold truncate">{manual.name}</span>
-                        {active && <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />}
+                      <div className="font-mono text-[10px] uppercase tracking-[0.08em] opacity-70">
+                        {active ? 'ACTIVE' : 'PRESET'}
                       </div>
-                      <div className="font-mono text-[11px] text-[#71717A] mt-0.5 truncate">
+                      <div className="text-xs font-medium mt-0.5 truncate">{manual.name}</div>
+                      <div className="font-mono text-[10px] opacity-60 mt-0.5 truncate">
                         {manual.fileName}
                       </div>
                     </button>
@@ -1114,9 +1000,9 @@ export default function App() {
               {!customManualName && (
                 <UploadDropzone
                   tone="emerald"
-                  icon={<FileText size={18} />}
-                  title="Nenhum manual enviado"
-                  hint="Arraste um PDF ou JSON aqui, ou clique para escolher"
+                  icon={null}
+                  title="Drop manual file (.pdf / .json)"
+                  hint="Local parser (free) or AI extraction"
                   accept={isManualFile}
                   rejectMessage="Formato não suportado. Envie um .pdf ou .json."
                   onFile={(f) => void processManualFile(f)}
@@ -1127,71 +1013,63 @@ export default function App() {
               )}
 
               {customManualName && (
-                <div className="px-3 py-2 rounded bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs font-mono">
-                  <span className="text-emerald-300 truncate">
-                    Arquivo carregado: {customManualName}
-                  </span>
-                  <span className="text-emerald-400 shrink-0">
-                    {customManualName.toLowerCase().endsWith('.json') ? 'JSON carregado' : 'Extraído do PDF • revise'}
+                <div className="px-3 py-2 border border-[#0A0A0A] bg-[#FAFAFA] flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.06em]">
+                  <span className="truncate">SRC: {customManualName}</span>
+                  <span className="shrink-0 font-semibold">
+                    {customManualName.toLowerCase().endsWith('.json') ? 'JSON LOADED' : 'PDF PARSED'}
                   </span>
                 </div>
               )}
 
-              <label className="flex items-start gap-2 text-[11px] font-mono text-[#8B8B95] cursor-pointer select-none">
+              <label className="flex items-start gap-2 font-mono text-[10px] uppercase tracking-[0.04em] text-[#525252] cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={useAiReading}
                   onChange={(e) => setUseAiReading(e.target.checked)}
-                  className="mt-0.5 accent-emerald-500"
+                  className="mt-0.5 accent-[#0A0A0A]"
                 />
                 <span>
-                  Ler PDF com IA (precisa de chave e crédito; entende papéis, logo e tom). Desmarcado: leitura local grátis,
-                  só cores e fontes.
+                  AI PDF MODE (API KEY REQUIRED) — SEM MARCAR: LEITURA LOCAL GRÁTIS (CORES + FONTES).
                 </span>
               </label>
 
               {manualStatus.state !== 'idle' && !(manualStatus.state === 'loading' && !customManualName) && (
                 <div
-                  className={`px-3 py-2 rounded border flex items-start gap-2 text-xs font-mono ${
+                  className={`px-3 py-2 border font-mono text-[10px] leading-relaxed ${
                     manualStatus.state === 'error'
-                      ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                      : manualStatus.state === 'ok'
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
-                      : 'bg-[#0E0E11] border-[#222228] text-[#A1A1AA]'
+                      ? 'border-[#DC2626] bg-[#FEF2F2] text-[#DC2626]'
+                      : 'border-[#0A0A0A] bg-[#FAFAFA] text-[#0A0A0A]'
                   }`}
                 >
-                  {manualStatus.state === 'loading' && <RefreshCw size={13} className="animate-spin shrink-0 mt-0.5" />}
-                  {manualStatus.state === 'error' && <XCircle size={13} className="shrink-0 mt-0.5" />}
-                  {manualStatus.state === 'ok' && <Info size={13} className="shrink-0 mt-0.5" />}
-                  <span>{manualStatus.message}</span>
+                  {manualStatus.message}
                 </div>
               )}
 
-              {/* Swatches Oficiais Ativos */}
-              <div className="pt-2 border-t border-[#1E1E24] flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[11px] font-mono text-[#A1A1AA]">
-                  PALETA OFICIAL ({activeRules.palette?.colors?.length || 0} HEX • ΔE ≤ {activeRules.palette?.toleranceDeltaE ?? 14}):
+              {/* Swatches Oficiais */}
+              <div className="pt-3 border-t border-[#E5E5E5] flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.06em]">
+                <span className="text-[#737373]">
+                  PALETTE // ΔE ≤ {activeRules.palette?.toleranceDeltaE ?? 14}
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {(activeRules.palette?.colors || []).map((c, idx) => (
-                    <div
+                    <span
                       key={idx}
                       title={`${c.name} (${c.role})`}
-                      className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#0B0B0E] border border-[#26262E] font-mono text-[11px]"
+                      className="inline-flex items-center gap-1.5 px-1.5 py-0.5 border border-[#0A0A0A] bg-white"
                     >
                       <span
-                        className="w-2.5 h-2.5 rounded-sm border border-white/20"
+                        className="w-2.5 h-2.5 border border-[#0A0A0A] inline-block"
                         style={{ backgroundColor: c.hex }}
                       />
                       <span>{c.hex}</span>
-                    </div>
+                    </span>
                   ))}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* SLOT 2: PEÇA CRIATIVA (PNG / JPG) */}
+          {/* SLOT 02: PEÇA CRIATIVA */}
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
@@ -1199,30 +1077,23 @@ export default function App() {
               const file = e.dataTransfer.files?.[0];
               if (file) handleAssetUpload(file);
             }}
-            className="bg-[#121215] border border-[#242429] rounded-lg p-4 sm:p-5 flex flex-col justify-between gap-4"
+            className="p-4 sm:p-6 flex flex-col justify-between gap-4"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#1C1C22] border border-[#2E2E38] text-[#A1A1AA]">
-                  INPUT 02
-                </span>
-                <div>
-                  <h2 className="text-sm font-semibold text-[#FAFAFA] flex items-center gap-2">
-                    <ImageIcon size={15} className="text-sky-400" />
-                    Peça Criativa (PNG / JPG)
-                  </h2>
-                  <p className="text-xs text-[#A1A1AA]">
-                    Arraste uma imagem real do seu computador ou teste casos de exemplo
-                  </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#737373]">
+                  02 / CREATIVE ASSET
                 </div>
+                <h2 className="text-sm font-semibold tracking-tight uppercase mt-0.5">
+                  Peça em Análise
+                </h2>
               </div>
 
               <button
                 onClick={() => assetInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-xs font-mono text-sky-300 transition-colors shrink-0"
+                className="font-mono text-[10px] uppercase tracking-[0.08em] px-2.5 py-1 border border-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white transition-colors shrink-0"
               >
-                <Upload size={13} />
-                <span>Subir PNG/JPG</span>
+                UPLOAD PNG/JPG
               </button>
               <input
                 ref={assetInputRef}
@@ -1233,41 +1104,36 @@ export default function App() {
               />
             </div>
 
-            {/* Botões de Exemplos Prontos */}
             <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 border border-[#0A0A0A] divide-y sm:divide-y-0 sm:divide-x divide-[#0A0A0A]">
                 <button
                   onClick={() => handleLoadSampleAsset('aura_approved')}
-                  className={`p-2 rounded border text-left transition-all ${
+                  className={`p-2.5 text-left transition-colors ${
                     assetSource === 'preset' && selectedSampleKey === 'aura_approved'
-                      ? 'bg-[#18181F] border-emerald-500/60'
-                      : 'bg-[#0E0E11] border-[#222228] hover:border-[#34343E]'
+                      ? 'bg-[#0A0A0A] text-white'
+                      : 'bg-white text-[#0A0A0A] hover:bg-[#F5F5F5]'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
-                    <CheckCircle2 size={12} />
-                    <span>Peça Aprovada</span>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.08em] opacity-70">
+                    SAMPLE 01
                   </div>
-                  <div className="font-mono text-[10px] text-[#71717A] mt-0.5 truncate">
-                    Aura Tech Q4
-                  </div>
+                  <div className="text-xs font-medium mt-0.5 truncate">Aprovada Q4</div>
+                  <div className="font-mono text-[10px] opacity-60 truncate">Aura Tech</div>
                 </button>
 
                 <button
                   onClick={() => handleLoadSampleAsset('aura_deviations')}
-                  className={`p-2 rounded border text-left transition-all ${
+                  className={`p-2.5 text-left transition-colors ${
                     assetSource === 'preset' && selectedSampleKey === 'aura_deviations'
-                      ? 'bg-[#18181F] border-rose-500/60'
-                      : 'bg-[#0E0E11] border-[#222228] hover:border-[#34343E]'
+                      ? 'bg-[#0A0A0A] text-white'
+                      : 'bg-white text-[#0A0A0A] hover:bg-[#F5F5F5]'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-rose-400">
-                    <XCircle size={12} />
-                    <span>Com Desvios</span>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.08em] opacity-70">
+                    SAMPLE 02
                   </div>
-                  <div className="font-mono text-[10px] text-[#71717A] mt-0.5 truncate">
-                    Banner Promo Off-Brand
-                  </div>
+                  <div className="text-xs font-medium mt-0.5 truncate">Com Desvios</div>
+                  <div className="font-mono text-[10px] opacity-60 truncate">Promo Off-Brand</div>
                 </button>
 
                 <button
@@ -1275,28 +1141,26 @@ export default function App() {
                     handleSelectManualPreset('multiverso_editorial');
                     handleLoadSampleAsset('multiverso_approved');
                   }}
-                  className={`p-2 rounded border text-left transition-all ${
+                  className={`p-2.5 text-left transition-colors ${
                     assetSource === 'preset' && selectedSampleKey === 'multiverso_approved'
-                      ? 'bg-[#18181F] border-emerald-500/60'
-                      : 'bg-[#0E0E11] border-[#222228] hover:border-[#34343E]'
+                      ? 'bg-[#0A0A0A] text-white'
+                      : 'bg-white text-[#0A0A0A] hover:bg-[#F5F5F5]'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-amber-300">
-                    <Sparkles size={12} />
-                    <span>Caso Editorial</span>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.08em] opacity-70">
+                    SAMPLE 03
                   </div>
-                  <div className="font-mono text-[10px] text-[#71717A] mt-0.5 truncate">
-                    Multiverso Ed. 14
-                  </div>
+                  <div className="text-xs font-medium mt-0.5 truncate">Editorial Ed. 14</div>
+                  <div className="font-mono text-[10px] opacity-60 truncate">Multiverso</div>
                 </button>
               </div>
 
               {assetSource !== 'upload' && (
                 <UploadDropzone
                   tone="sky"
-                  icon={<ImageIcon size={18} />}
-                  title="Nenhuma peça sua enviada"
-                  hint="Arraste um PNG, JPG ou WebP aqui, ou clique para escolher"
+                  icon={null}
+                  title="Drop artwork file (.png / .jpg / .webp)"
+                  hint="Direct pixel sampling via HTML5 Canvas"
                   accept={isImageFile}
                   rejectMessage="Formato não suportado. Envie PNG, JPG ou WebP."
                   onFile={handleAssetUpload}
@@ -1304,13 +1168,13 @@ export default function App() {
                 />
               )}
 
-              <div className="pt-2 border-t border-[#1E1E24] flex items-center justify-between text-[11px] font-mono text-[#A1A1AA]">
+              <div className="pt-3 border-t border-[#E5E5E5] flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.06em]">
                 <span className="truncate">
-                  ATIVO: <strong className="text-[#FAFAFA]">{assetMeta.name}</strong>
+                  FILE: <strong>{assetMeta.name}</strong>
                 </span>
-                <span>
+                <span className="text-[#737373] shrink-0">
                   {analysisResult
-                    ? `${analysisResult.pixelData.dimensions.width}×${analysisResult.pixelData.dimensions.height}px • ${assetMeta.sizeKb}KB`
+                    ? `${analysisResult.pixelData.dimensions.width}×${analysisResult.pixelData.dimensions.height}PX // ${assetMeta.sizeKb}KB`
                     : `${assetMeta.sizeKb}KB`}
                 </span>
               </div>
@@ -1318,67 +1182,61 @@ export default function App() {
           </div>
         </section>
 
-        {/* SEÇÃO INFERIOR: WORKSPACE DE DIAGNÓSTICO (CANVAS VISUAL + TELEMETRIA) */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* COLUNA ESQUERDA (7 COLS): PREVIEW INTERATIVO COM BOUNDING BOXES */}
-          <div className="lg:col-span-7 bg-[#121215] border border-[#242429] rounded-lg overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#242429] flex flex-wrap items-center justify-between gap-2 bg-[#151519]">
-              <div className="flex items-center gap-2">
-                <Layers size={15} className="text-[#A1A1AA]" />
-                <span className="text-xs font-mono uppercase tracking-wider text-[#D4D4D8]">
-                  Inspeção Espacial & Bounding Boxes
-                </span>
-              </div>
+        {/* LINHA 02: VIEWPORT (7 COLS) + TELEMETRIA / SCORE (5 COLS) */}
+        <section className="grid grid-cols-1 lg:grid-cols-12">
+          {/* COLUNA ESQUERDA: VIEWPORT */}
+          <div className="lg:col-span-7 border-b lg:border-b-0 lg:border-r border-[#0A0A0A] flex flex-col">
+            <div className="px-4 sm:px-6 h-11 border-b border-[#0A0A0A] flex items-center justify-between gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.1em]">
+                03 / SPATIAL INSPECTION
+              </span>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowBoundingBoxes(!showBoundingBoxes)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono border transition-colors ${
-                    showBoundingBoxes
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                      : 'bg-[#0E0E11] border-[#27272E] text-[#A1A1AA]'
-                  }`}
-                >
-                  {showBoundingBoxes ? <Eye size={13} /> : <EyeOff size={13} />}
-                  <span>{showBoundingBoxes ? 'Marcações Visíveis' : 'Ocultar Marcações'}</span>
-                </button>
-              </div>
+              <button
+                onClick={() => setShowBoundingBoxes(!showBoundingBoxes)}
+                className={`font-mono text-[10px] uppercase tracking-[0.08em] px-2.5 py-1 border transition-colors ${
+                  showBoundingBoxes
+                    ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
+                    : 'border-[#0A0A0A] bg-white text-[#0A0A0A]'
+                }`}
+              >
+                OVERLAY: {showBoundingBoxes ? 'ON' : 'OFF'}
+              </button>
             </div>
 
-            {/* Palco da Imagem */}
-            <div className="p-4 sm:p-6 bg-[#09090B] flex items-center justify-center min-h-[340px]">
+            <div
+              className="p-4 sm:p-8 flex items-center justify-center min-h-[360px] flex-1"
+              style={{
+                backgroundColor: '#F7F7F7',
+                backgroundImage:
+                  'linear-gradient(to right, #E5E5E5 1px, transparent 1px), linear-gradient(to bottom, #E5E5E5 1px, transparent 1px)',
+                backgroundSize: '24px 24px'
+              }}
+            >
               {!assetDataUrl || assetError ? (
-                <div className="flex flex-col items-center text-center gap-3 max-w-sm py-8">
-                  <div className="w-12 h-12 rounded-full bg-[#14141A] border border-[#27272E] flex items-center justify-center text-[#71717A]">
-                    {assetError ? <AlertTriangle size={20} className="text-rose-300" /> : <ImageIcon size={20} />}
+                <div className="border border-[#0A0A0A] bg-white p-6 max-w-sm text-center space-y-3">
+                  <div className="font-mono text-[11px] uppercase tracking-[0.08em] font-semibold">
+                    {assetError ? 'IMAGE LOAD ERROR' : 'NO ASSET LOADED'}
                   </div>
-                  <div>
-                    <div className="text-sm font-semibold text-[#E4E4E7]">
-                      {assetError ? 'Não foi possível abrir a imagem' : 'Nenhuma peça carregada'}
-                    </div>
-                    <p className="text-xs text-[#8B8B95] mt-1">
-                      {assetError ?? 'Suba um PNG, JPG ou WebP, ou carregue um exemplo, para ver o diagnóstico de marca.'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
+                  <p className="text-xs text-[#525252]">
+                    {assetError ?? 'Suba um PNG, JPG ou WebP ou carregue uma peça de exemplo.'}
+                  </p>
+                  <div className="flex justify-center gap-2 pt-1">
                     <button
                       onClick={() => assetInputRef.current?.click()}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-xs font-mono text-sky-300 transition-colors"
+                      className="font-mono text-[10px] uppercase tracking-[0.08em] px-3 py-1.5 border border-[#0A0A0A] bg-[#0A0A0A] text-white"
                     >
-                      <Upload size={13} />
-                      <span>Subir peça</span>
+                      UPLOAD
                     </button>
                     <button
                       onClick={() => handleLoadSampleAsset('aura_approved')}
-                      className="px-2.5 py-1.5 rounded bg-[#1A1A20] hover:bg-[#24242C] border border-[#2E2E38] text-xs font-mono text-[#E4E4E7] transition-colors"
+                      className="font-mono text-[10px] uppercase tracking-[0.08em] px-3 py-1.5 border border-[#0A0A0A] bg-white text-[#0A0A0A]"
                     >
-                      Usar exemplo
+                      SAMPLE
                     </button>
                   </div>
                 </div>
               ) : (
-              <div className="relative inline-block max-w-full rounded overflow-hidden border border-[#27272E] shadow-2xl">
-                {assetDataUrl && (
+                <div className="relative inline-block max-w-full border border-[#0A0A0A] bg-white">
                   <img
                     ref={imgRef}
                     src={assetDataUrl}
@@ -1390,63 +1248,61 @@ export default function App() {
                     }}
                     className="block max-h-[480px] w-auto max-w-full object-contain select-none"
                   />
-                )}
 
-                {/* Sobreposição de Bounding Boxes */}
-                {showBoundingBoxes &&
-                  analysisResult?.annotations?.map((ann) => {
-                    const isSelected = activeAnnotationId === ann.id;
-                    const boxColors =
-                      ann.type === 'pass'
-                        ? 'border-emerald-400 bg-emerald-400/10 text-emerald-300'
-                        : ann.type === 'warn'
-                        ? 'border-amber-400 bg-amber-400/15 text-amber-200'
-                        : 'border-rose-500 bg-rose-500/15 text-rose-200';
+                  {showBoundingBoxes &&
+                    analysisResult?.annotations?.map((ann, idx) => {
+                      const isSelected = activeAnnotationId === ann.id;
+                      const markerNum = String(idx + 1).padStart(2, '0');
+                      const strokeStyle =
+                        ann.type === 'pass'
+                          ? 'border-[#0A0A0A] bg-[#0A0A0A]/10'
+                          : ann.type === 'warn'
+                          ? 'border-[#B45309] bg-[#B45309]/10'
+                          : 'border-[#DC2626] bg-[#DC2626]/15';
 
-                    const badgeBg =
-                      ann.type === 'pass'
-                        ? 'bg-emerald-500 text-black'
-                        : ann.type === 'warn'
-                        ? 'bg-amber-400 text-black'
-                        : 'bg-rose-500 text-white';
+                      const tagStyle =
+                        ann.type === 'pass'
+                          ? 'bg-[#0A0A0A] text-white'
+                          : ann.type === 'warn'
+                          ? 'bg-[#B45309] text-white'
+                          : 'bg-[#DC2626] text-white';
 
-                    return (
-                      <div
-                        key={ann.id}
-                        onClick={() =>
-                          setActiveAnnotationId(isSelected ? null : ann.id)
-                        }
-                        style={{
-                          top: ann.box.top,
-                          left: ann.box.left,
-                          width: ann.box.width,
-                          height: ann.box.height
-                        }}
-                        className={`absolute border-2 transition-all cursor-pointer ${boxColors} ${
-                          isSelected ? 'ring-2 ring-white z-20 scale-[1.01]' : 'z-10 hover:brightness-110'
-                        }`}
-                      >
-                        <span
-                          className={`absolute -top-5 left-0 px-1.5 py-0.5 text-[10px] font-mono font-bold rounded-t whitespace-nowrap shadow ${badgeBg}`}
+                      return (
+                        <div
+                          key={ann.id}
+                          onClick={() => setActiveAnnotationId(isSelected ? null : ann.id)}
+                          style={{
+                            top: ann.box.top,
+                            left: ann.box.left,
+                            width: ann.box.width,
+                            height: ann.box.height
+                          }}
+                          className={`absolute border transition-none cursor-pointer ${strokeStyle} ${
+                            isSelected ? 'ring-2 ring-[#0A0A0A] z-20' : 'z-10'
+                          }`}
                         >
-                          {ann.label}
-                        </span>
-                      </div>
-                    );
-                  })}
-              </div>
+                          <span
+                            className={`absolute -top-5 left-0 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] whitespace-nowrap ${tagStyle}`}
+                          >
+                            [{markerNum}] {ann.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
               )}
             </div>
 
-            {/* Legenda das Anotações Clicáveis */}
+            {/* ÍNDICE DE ANOTAÇÕES */}
             {analysisResult && (
-              <div className="p-4 border-t border-[#242429] bg-[#101013] space-y-2">
-                <div className="text-[11px] font-mono text-[#71717A] uppercase">
-                  Clique em uma camada para destacar na peça:
+              <div className="border-t border-[#0A0A0A] bg-white">
+                <div className="px-4 sm:px-6 py-2 border-b border-[#E5E5E5] font-mono text-[10px] uppercase tracking-[0.08em] text-[#737373]">
+                  ANNOTATIONS INDEX — CLICK TO HIGHLIGHT
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {analysisResult.annotations.map((ann) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[#E5E5E5]">
+                  {analysisResult.annotations.map((ann, idx) => {
                     const active = activeAnnotationId === ann.id;
+                    const markerNum = String(idx + 1).padStart(2, '0');
                     return (
                       <button
                         key={ann.id}
@@ -1454,17 +1310,17 @@ export default function App() {
                           setShowBoundingBoxes(true);
                           setActiveAnnotationId(active ? null : ann.id);
                         }}
-                        className={`text-left p-2.5 rounded border transition-all ${
-                          active
-                            ? 'bg-[#1A1A22] border-white/50'
-                            : 'bg-[#141418] border-[#24242B] hover:border-[#383842]'
+                        className={`p-3.5 text-left transition-colors ${
+                          active ? 'bg-[#0A0A0A] text-white' : 'hover:bg-[#FAFAFA]'
                         }`}
                       >
-                        <div className="flex items-center gap-1.5 text-xs font-semibold">
-                          {renderStatusIcon(ann.type, 14)}
-                          <span className="truncate">{ann.label}</span>
+                        <div className="flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.06em]">
+                          <span>
+                            [{markerNum}] {ann.label}
+                          </span>
+                          <span className="opacity-60">{ann.type.toUpperCase()}</span>
                         </div>
-                        <p className="text-[11px] text-[#A1A1AA] mt-1 leading-snug">
+                        <p className={`text-xs mt-1 leading-snug ${active ? 'text-white/80' : 'text-[#525252]'}`}>
                           {ann.detail}
                         </p>
                       </button>
@@ -1475,166 +1331,124 @@ export default function App() {
             )}
           </div>
 
-          {/* COLUNA DIREITA (5 COLS): BRAND SCORE & TELEMETRIA ANALÍTICA */}
-          <div className="lg:col-span-5 space-y-4">
-            {/* ESTADO VAZIO: ainda sem diagnóstico */}
+          {/* COLUNA DIREITA: BRAND SCORE + CORES + CHECKLIST */}
+          <div className="lg:col-span-5 divide-y divide-[#0A0A0A]">
             {!analysisResult && (
-              <div className="bg-[#121215] border border-dashed border-[#2A2A32] rounded-lg p-6 flex flex-col items-center text-center gap-2">
-                {isAnalyzing ? (
-                  <RefreshCw size={20} className="animate-spin text-[#A1A1AA]" />
-                ) : (
-                  <Layers size={20} className="text-[#71717A]" />
-                )}
-                <div className="text-sm font-semibold text-[#E4E4E7]">
-                  {isAnalyzing ? 'Analisando a peça…' : 'Sem diagnóstico ainda'}
-                </div>
-                <p className="text-xs text-[#8B8B95] max-w-xs">
-                  O Brand Score, o checklist e o relatório aparecem aqui assim que uma peça for analisada.
-                </p>
+              <div className="p-8 text-center font-mono text-xs uppercase tracking-[0.08em] text-[#737373]">
+                {isAnalyzing ? 'CALCULATING BRAND SCORE...' : 'AWAITING AUDIT'}
               </div>
             )}
 
-            {/* CARD PRINCIPAL DE SCORE */}
-            {analysisResult && scoreTheme && (
-              <div className="bg-[#121215] border border-[#242429] rounded-lg p-5 space-y-5">
+            {/* SCORE PRINCIPAL */}
+            {analysisResult && verdict && (
+              <div className="p-4 sm:p-6 space-y-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-[#A1A1AA]">
-                      Aderência ao Manual ({activeRules.brand})
-                    </span>
+                    <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#737373]">
+                      04 / BRAND SCORE — {activeRules.brand}
+                    </div>
                     <div className="flex items-baseline gap-3 mt-1">
-                      <span className={`text-5xl font-bold font-mono tracking-tight ${scoreTheme.color}`}>
+                      <span className={`font-mono text-5xl sm:text-6xl font-bold tracking-tighter tabular-nums ${verdict.textClass}`}>
                         {analysisResult.totalScore}%
                       </span>
-                      <span
-                        className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded border ${scoreTheme.bg} ${scoreTheme.border} ${scoreTheme.color}`}
-                      >
-                        {scoreTheme.label}
+                      <span className="font-mono text-xs uppercase tracking-[0.1em] border border-[#0A0A0A] px-2 py-0.5">
+                        {verdict.code}
                       </span>
                     </div>
                   </div>
 
                   <button
                     onClick={handleCopyMarkdownReport}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-[#19191F] hover:bg-[#23232B] border border-[#2D2D36] text-xs font-mono text-[#E4E4E7] transition-colors shrink-0"
-                    title="Copiar relatório formatado em Markdown para Jira/Slack"
+                    className="font-mono text-[10px] uppercase tracking-[0.08em] px-2.5 py-1.5 border border-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white transition-colors shrink-0"
                   >
-                    {copiedReport ? (
-                      <>
-                        <Check size={13} className="text-emerald-400" />
-                        <span className="text-emerald-400">Copiado</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={13} />
-                        <span>Exportar MD</span>
-                      </>
-                    )}
+                    {copiedReport ? 'COPIED .MD' : 'COPY .MD'}
                   </button>
                 </div>
 
-                {/* Barras dos 3 Pilares Ponderados */}
-                <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-[#202026]">
-                  <div className="bg-[#0D0D10] border border-[#1F1F26] rounded p-2.5">
-                    <div className="text-[10px] font-mono text-[#A1A1AA]">CRÍTICO (40%)</div>
-                    <div className="text-lg font-mono font-bold mt-0.5">
+                {/* BARRA FINA GERAL */}
+                <div className="w-full h-[2px] bg-[#E5E5E5]">
+                  <div
+                    className={`h-full transition-all ${verdict.barClass}`}
+                    style={{ width: `${analysisResult.totalScore}%` }}
+                  />
+                </div>
+
+                {/* 3 PILARES */}
+                <div className="grid grid-cols-3 border border-[#0A0A0A] divide-x divide-[#0A0A0A]">
+                  <div className="p-3">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-[#737373]">
+                      CRIT 40%
+                    </div>
+                    <div className="font-mono text-xl font-bold tabular-nums mt-0.5">
                       {analysisResult.pillars.critical}%
                     </div>
-                    <div className="w-full h-1 bg-[#1E1E24] rounded-full mt-1.5 overflow-hidden">
-                      <div
-                        className={`h-full ${getScoreTheme(analysisResult.pillars.critical).bar}`}
-                        style={{ width: `${analysisResult.pillars.critical}%` }}
-                      />
-                    </div>
                   </div>
-
-                  <div className="bg-[#0D0D10] border border-[#1F1F26] rounded p-2.5">
-                    <div className="text-[10px] font-mono text-[#A1A1AA]">ESTRUTURAL (35%)</div>
-                    <div className="text-lg font-mono font-bold mt-0.5">
+                  <div className="p-3">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-[#737373]">
+                      STRUCT 35%
+                    </div>
+                    <div className="font-mono text-xl font-bold tabular-nums mt-0.5">
                       {analysisResult.pillars.structural}%
                     </div>
-                    <div className="w-full h-1 bg-[#1E1E24] rounded-full mt-1.5 overflow-hidden">
-                      <div
-                        className={`h-full ${getScoreTheme(analysisResult.pillars.structural).bar}`}
-                        style={{ width: `${analysisResult.pillars.structural}%` }}
-                      />
-                    </div>
                   </div>
-
-                  <div className="bg-[#0D0D10] border border-[#1F1F26] rounded p-2.5">
-                    <div className="text-[10px] font-mono text-[#A1A1AA]">ESTÉTICO (25%)</div>
-                    <div className="text-lg font-mono font-bold mt-0.5">
-                      {analysisResult.pillars.aesthetic}%
+                  <div className="p-3">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-[#737373]">
+                      AESTH 25%
                     </div>
-                    <div className="w-full h-1 bg-[#1E1E24] rounded-full mt-1.5 overflow-hidden">
-                      <div
-                        className={`h-full ${getScoreTheme(analysisResult.pillars.aesthetic).bar}`}
-                        style={{ width: `${analysisResult.pillars.aesthetic}%` }}
-                      />
+                    <div className="font-mono text-xl font-bold tabular-nums mt-0.5">
+                      {analysisResult.pillars.aesthetic}%
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* TELEMETRIA REAL DE PIXELS (CORES EXTRAÍDAS VS. OFICIAIS) */}
+            {/* EXTRAÇÃO REAL DE PIXELS */}
             {analysisResult && (
-              <div className="bg-[#121215] border border-[#242429] rounded-lg p-4 sm:p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-mono uppercase tracking-wider text-[#D4D4D8] flex items-center gap-1.5">
-                    <Palette size={14} className="text-emerald-400" />
-                    Extração Real de Pixels (Canvas)
-                  </h3>
-                  <span className="text-[11px] font-mono text-[#71717A]">
-                    Contraste Máx: {analysisResult.pixelData.bestContrast}:1
+              <div className="p-4 sm:p-6 space-y-3">
+                <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.08em]">
+                  <span className="font-medium">PIXEL SAMPLING // DELTA-E</span>
+                  <span className="text-[#737373] tabular-nums">
+                    MAX WCAG {analysisResult.pixelData.bestContrast}:1
                   </span>
                 </div>
 
-                <div className="space-y-2">
+                <div className="border border-[#0A0A0A] divide-y divide-[#E5E5E5]">
                   {analysisResult.pixelData.colors.map((item, index) => (
                     <div
                       key={index}
-                      className="p-2.5 rounded bg-[#0D0D10] border border-[#1F1F26] flex items-center justify-between gap-2 text-xs font-mono"
+                      className="p-2.5 flex items-center justify-between gap-2 font-mono text-xs tabular-nums"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        {/* Swatch Extraído -> Swatch Oficial */}
-                        <div className="flex items-center shrink-0">
+                        <div className="flex shrink-0 border border-[#0A0A0A]">
                           <span
-                            className="w-5 h-5 rounded-l border border-white/20"
+                            className="w-4 h-4 inline-block"
                             style={{ backgroundColor: item.extractedHex }}
                             title={`Extraído: ${item.extractedHex}`}
                           />
                           <span
-                            className="w-5 h-5 rounded-r border border-white/20 -ml-px"
+                            className="w-4 h-4 inline-block border-l border-[#0A0A0A]"
                             style={{ backgroundColor: item.closestOfficial.hex }}
-                            title={`Oficial mais próximo: ${item.closestOfficial.hex}`}
+                            title={`Oficial: ${item.closestOfficial.hex}`}
                           />
                         </div>
 
                         <div className="truncate">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-[#FAFAFA]">
-                              {item.extractedHex}
-                            </span>
-                            <span className="text-[#71717A]">({item.percentage}%)</span>
+                            <span className="font-semibold">{item.extractedHex}</span>
+                            <span className="text-[11px] text-[#737373]">{item.percentage}%</span>
                           </div>
-                          <div className="text-[10px] text-[#A1A1AA] truncate">
-                            ≈ {item.closestOfficial.name} ({item.closestOfficial.hex})
+                          <div className="text-[10px] uppercase tracking-[0.04em] text-[#737373] truncate">
+                            → {item.closestOfficial.name} ({item.closestOfficial.hex})
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] ${
-                            item.isCompliant
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                          }`}
-                        >
+                        <span className="text-[10px] uppercase text-[#525252]">
                           ΔE {item.deltaE}
                         </span>
-                        {renderStatusIcon(item.isCompliant ? 'pass' : 'fail', 14)}
+                        {renderStatusTag(item.isCompliant ? 'pass' : 'fail')}
                       </div>
                     </div>
                   ))}
@@ -1642,50 +1456,36 @@ export default function App() {
               </div>
             )}
 
-            {/* CHECKLIST ACIONÁVEL DETALHADO */}
+            {/* CHECKLIST POR CRITÉRIO */}
             {analysisResult && (
-              <div className="bg-[#121215] border border-[#242429] rounded-lg p-4 sm:p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-mono uppercase tracking-wider text-[#D4D4D8] flex items-center gap-1.5">
-                    <Sliders size={14} className="text-sky-400" />
-                    Diagnóstico por Critério
-                  </h3>
-                  <span className="text-[11px] font-mono text-[#71717A]">
-                    {analysisResult.timestamp}
-                  </span>
+              <div className="p-4 sm:p-6 space-y-3">
+                <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.08em]">
+                  <span className="font-medium">CRITERIA DIAGNOSTIC</span>
+                  <span className="text-[#737373] tabular-nums">{analysisResult.timestamp}</span>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="border border-[#0A0A0A] divide-y divide-[#E5E5E5]">
                   {analysisResult.checklist.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 rounded bg-[#0D0D10] border border-[#1F1F26] space-y-1.5"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          {renderStatusIcon(item.status, 15)}
-                          <span className="text-xs font-semibold text-[#FAFAFA]">
-                            {item.title}
-                          </span>
+                    <div key={item.id} className="p-3 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {renderStatusTag(item.status)}
+                          <span className="text-xs font-semibold truncate">{item.title}</span>
                         </div>
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#18181E] border border-[#2A2A34] text-[#D4D4D8] shrink-0">
+                        <span className="font-mono text-[10px] uppercase tracking-[0.04em] text-[#525252] shrink-0 tabular-nums">
                           {item.metric}
                         </span>
                       </div>
-                      <p className="text-xs text-[#A1A1AA] leading-relaxed pl-6">
+                      <p className="text-xs text-[#525252] leading-relaxed">
                         {item.description}
                       </p>
                     </div>
                   ))}
                 </div>
 
-                {/* Nota técnica sobre PNG raster */}
-                <div className="p-2.5 rounded bg-[#0B0B0E] border border-[#1E1E24] flex items-start gap-2 text-[11px] text-[#71717A]">
-                  <Info size={14} className="shrink-0 mt-0.5 text-[#A1A1AA]" />
-                  <span>
-                    Cores e contraste são medidos diretamente nos pixels via Canvas (CIE LAB Delta-E & WCAG 2.1). A identificação tipográfica em PNG opera por estimativa morfológica probabilística.
-                  </span>
-                </div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.04em] text-[#737373] leading-relaxed">
+                  NOTE: COR E CONTRASTE MEDIDOS VIA CANVAS (CIE LAB / WCAG 2.1). FONTE EM PNG É ESTIMATIVA PROBABILÍSTICA.
+                </p>
               </div>
             )}
           </div>

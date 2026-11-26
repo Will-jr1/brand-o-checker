@@ -1,1 +1,50 @@
-@import 'tailwindcss';
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-paper: #FFFFFF;
+  --color-paper-subtle: #FAFAFA;
+  --color-ink: #0A0A0A;
+  --color-ink-muted: #525252;
+  --color-ink-faint: #737373;
+  --color-rule: #0A0A0A;
+  --color-rule-light: #E5E5E5;
+  --color-accent-fail: #DC2626;
+  --color-accent-warn: #B45309;
+}
+
+@layer base {
+  html,
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  /* Garante cantos retos e zero sombra em elementos nativos */
+  button,
+  input,
+  textarea,
+  select {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* Utilitário opcional para fundo quadriculado técnico de 1px */
+.bg-brutalist-grid {
+  background-color: #F7F7F7;
+  background-image:
+    linear-gradient(to right, #E5E5E5 1px, transparent 1px),
+    linear-gradient(to bottom, #E5E5E5 1px, transparent 1px);
+  background-size: 24px 24px;
+}
