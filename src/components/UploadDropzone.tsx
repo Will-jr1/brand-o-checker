@@ -1,7 +1,21 @@
 import { useState } from 'react';
 import type { DragEvent, KeyboardEvent, ReactNode } from 'react';
+import { RefreshCw, AlertCircle, UploadCloud } from 'lucide-react';
 
 type Tone = 'emerald' | 'sky';
+
+const TONES: Record<Tone, { idle: string; drag: string; badge: string }> = {
+  emerald: {
+    idle: 'border-slate-200/90 bg-slate-50/70 hover:bg-emerald-50/40 hover:border-emerald-300',
+    drag: 'border-emerald-400 bg-emerald-50/80 ring-4 ring-emerald-500/10',
+    badge: 'bg-emerald-500/10 text-emerald-700'
+  },
+  sky: {
+    idle: 'border-slate-200/90 bg-slate-50/70 hover:bg-blue-50/40 hover:border-blue-300',
+    drag: 'border-blue-400 bg-blue-50/80 ring-4 ring-blue-500/10',
+    badge: 'bg-blue-500/10 text-blue-700'
+  }
+};
 
 interface UploadDropzoneProps {
   icon: ReactNode;
@@ -17,17 +31,20 @@ interface UploadDropzoneProps {
 }
 
 export default function UploadDropzone({
+  icon,
   title,
   hint,
+  tone,
   accept,
   rejectMessage,
   onFile,
   onBrowse,
   busy = false,
-  busyLabel = 'LENDO ARQUIVO...'
+  busyLabel = 'Lendo arquivo...'
 }: UploadDropzoneProps) {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = TONES[tone];
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -72,43 +89,34 @@ export default function UploadDropzone({
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
       }}
       onDrop={handleDrop}
-      className={`border border-dashed px-3.5 py-3 flex items-center justify-between gap-3 text-left transition-colors outline-none focus-visible:bg-[#0A0A0A] focus-visible:text-white ${
+      className={`rounded-xl border border-dashed px-4 py-3.5 flex items-center gap-3.5 text-left transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
         busy
-          ? 'border-[#0A0A0A]/40 bg-[#F5F5F5] text-[#525252] cursor-wait'
-          : dragging
-          ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white cursor-pointer'
-          : 'border-[#0A0A0A]/60 bg-white text-[#0A0A0A] hover:border-[#0A0A0A] hover:bg-[#FAFAFA] cursor-pointer'
+          ? 'border-slate-200 bg-slate-50 cursor-wait'
+          : `cursor-pointer ${dragging ? t.drag : t.idle}`
       }`}
     >
-      <div className="min-w-0">
-        <div className="font-mono text-[11px] uppercase tracking-[0.06em] font-medium">
-          {busy ? busyLabel : dragging ? 'SOLTE O ARQUIVO' : title}
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${t.badge}`}>
+        {busy ? <RefreshCw size={17} className="animate-spin" /> : icon || <UploadCloud size={17} />}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="text-xs font-semibold text-slate-800">
+          {busy ? busyLabel : dragging ? 'Solte o arquivo para enviar' : title}
         </div>
-        {!busy && (
-          <div
-            className={`font-mono text-[10px] uppercase tracking-[0.04em] mt-0.5 ${
-              dragging ? 'text-white/70' : 'text-[#737373]'
-            }`}
-          >
-            {hint}
-          </div>
-        )}
+        {!busy && <div className="text-[11px] text-slate-500 mt-0.5 truncate">{hint}</div>}
         {error && !busy && (
-          <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-[#DC2626]">
-            ERR // {error}
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-rose-600 font-medium">
+            <AlertCircle size={12} className="shrink-0" />
+            <span>{error}</span>
           </div>
         )}
       </div>
 
-      <span
-        className={`font-mono text-[10px] uppercase tracking-[0.08em] px-2 py-1 border shrink-0 ${
-          dragging
-            ? 'border-white text-white'
-            : 'border-[#0A0A0A] text-[#0A0A0A]'
-        }`}
-      >
-        {busy ? 'WAIT' : '+ FILE'}
-      </span>
+      {!busy && (
+        <span className="text-[11px] font-medium text-slate-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200/80 shadow-[var(--shadow-pill)] shrink-0">
+          Selecionar
+        </span>
+      )}
     </div>
   );
 }
