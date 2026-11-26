@@ -10,6 +10,9 @@ export const maxDuration = 60;
 const MAX_BYTES = 4_200_000;
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5';
 
+// Ao colar a chave na Vercel é comum entrarem espaços ou aspas junto; tira os dois.
+const getApiKey = () => process.env.ANTHROPIC_API_KEY?.trim().replace(/^["']|["']$/g, '').trim();
+
 const SYSTEM_PROMPT = [
   'Você extrai regras de identidade visual de brandbooks em PDF.',
   'Chame a ferramenta save_brand_rules com SOMENTE o que está explícito no documento.',
@@ -164,8 +167,9 @@ const json = (body: unknown, status = 200) =>
   });
 
 export async function POST(request: Request): Promise<Response> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return json({ error: 'ANTHROPIC_API_KEY não está configurada no servidor.' }, 500);
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return json({ error: 'ANTHROPIC_API_KEY não está configurada neste ambiente da Vercel (ou o deploy é anterior à variável).' }, 500);
   }
 
   const contentType = request.headers.get('content-type') ?? '';
@@ -183,7 +187,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const client = new Anthropic();
+    const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
       model: MODEL,
       max_tokens: 4000,
@@ -213,9 +217,21 @@ export async function POST(request: Request): Promise<Response> {
   } catch (err) {
     console.error('extract-manual falhou:', err);
     const status = err instanceof Anthropic.APIError ? err.status : undefined;
-    if (status === 413) return json({ error: 'O PDF é grande demais para o modelo (limite de páginas ou de tamanho).' }, 413);
-    if (status === 401) return json({ error: 'Chave da API inválida no servidor.' }, 500);
-    if (status === 429) return json({ error: 'Muitas requisições ao modelo agora. Tente de novo em instantes.' }, 429);
-    return json({ error: 'Falha ao ler o manual. Tente novamente.' }, 502);
+    // Mensagem da API (não contém a chave) ajuda a diagnosticar sem abrir os logs.
+    const detail = err instanceof Error ? err.message.slice(0, 300) : undefined;
+    if (status === 401) {
+      console.error(`401 da Anthropic: chave com ${apiKey.length} caracteres, prefixo "${apiKey.slice(0, 10)}"`);
+      return json(
+        {
+          error:
+            'A Anthropic recusou a chave (401). Confira ANTHROPIC_API_KEY na Vercel: sem aspas ou espaços, no ambiente certo (Production/Preview) e com redeploy feito.',
+          detail
+        },
+        502
+      );
+    }
+    if (status === 413) return json({ error: 'O PDF é grande demais para o modelo (limite de páginas ou de tamanho).', detail }, 413);
+    if (status === 429) return json({ error: 'Muitas requisições ao modelo agora. Tente de novo em instantes.', detail }, 429);
+    return json({ error: 'Falha ao ler o manual.', detail }, 502);
   }
 }

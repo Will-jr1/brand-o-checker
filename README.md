@@ -13,7 +13,7 @@ Esta é uma versão de prova de conceito. Vale deixar claro:
 | Contraste WCAG 2.1 entre as cores dominantes | **Real** |
 | Regras editáveis ao vivo (o score recalcula ao mudar o JSON) | **Real** |
 | Exportar relatório em Markdown | **Real** |
-| Leitura de PDF de manual | **Real, por IA** — o PDF vai para `/api/extract-manual`, que usa a API da Anthropic e devolve o JSON de regras. Pode errar ou omitir campos: sempre revise o JSON (o app o abre automaticamente) |
+| Leitura de PDF de manual | **Dois modos.** Local (padrão, grátis): pdf.js no navegador lê cores em hex/RGB e fontes embutidas. Por IA (opcional): a API da Anthropic lê o manual inteiro. Nos dois casos, revise o JSON (o app o abre automaticamente) |
 | Identificação de tipografia | **Heurística** — não há OCR nem análise de glifos |
 | Área de respiro do logo e tom de voz | **Heurística** — os valores vêm de faixas fixas; nas peças de exemplo, os desvios são pré-definidos |
 
@@ -34,7 +34,18 @@ npm run build       # typecheck + build de produção em dist/
 npm run preview     # serve o build localmente
 ```
 
-## Leitura de manual por IA (Vercel)
+## Leitura de manual: dois modos
+
+**Local (padrão, grátis).** Roda 100% no navegador com pdf.js. Sem servidor, sem chave e sem limite de 4 MB. Lê só o que está como **texto** no PDF:
+
+- cores escritas como `#RRGGBB`, `RGB 37 99 235`, `rgb(37, 99, 235)` ou `R 37 G 99 B 235`;
+- nomes das fontes embutidas (as mais usadas viram `primaryFont` e `secondaryFont`; podem ser as do próprio documento, não as da marca);
+- o nome da cor é um palpite (texto ao lado ou logo acima); papéis, logo, contraste e tom de voz **não** são lidos;
+- PDF escaneado ou com cores só em imagem não funciona: use o JSON manual ou o modo IA.
+
+**Por IA (opcional, marque a caixa no app).** Precisa de chave e de crédito na API da Anthropic. Veja a seção abaixo.
+
+## Leitura por IA (Vercel)
 
 O upload de PDF chama a função `api/extract-manual.ts`, que envia o documento ao modelo e força uma resposta estruturada no formato das regras. A saída é validada (hex normalizados, campos desconhecidos descartados) e campos ausentes no manual ficam de fora em vez de inventados.
 
@@ -87,13 +98,16 @@ Crítico (paleta + logo) 40% · Estrutural (tipografia + contraste) 35% · Esté
 
 ```
 api/
-  extract-manual.ts  # Vercel Function: PDF -> regras JSON (API da Anthropic)
+  extract-manual.ts  # Vercel Function: PDF -> regras JSON (API da Anthropic), modo IA
 src/
   App.tsx      # lógica de cor, motor de auditoria e interface (arquivo único por enquanto)
+  lib/pdfLocal.ts  # leitura local de PDF (pdf.js, carregado sob demanda)
+  components/UploadDropzone.tsx  # dropzone (arrastar/soltar) com estados vazio, arrastando, carregando e erro
+  types.ts     # tipos compartilhados
   main.tsx     # entrypoint
   index.css    # Tailwind v4
 ```
 
 ## Stack
 
-React 19, TypeScript, Vite, Tailwind CSS v4, lucide-react, Vercel Functions + `@anthropic-ai/sdk`.
+React 19, TypeScript, Vite, Tailwind CSS v4, lucide-react, pdf.js (`pdfjs-dist`), Vercel Functions + `@anthropic-ai/sdk` (modo IA).

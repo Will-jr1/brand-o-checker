@@ -23,100 +23,10 @@ import {
   Info,
   Terminal
 } from 'lucide-react';
+import type { Status, SampleKey, Rgb, PaletteColor, BrandRules, PresetManual, ExtractedColor, PixelData, TypographyAnalysis, Annotation, ChecklistItem, AnalysisResult } from './types';
+import { extractRulesFromPdfLocal } from './lib/pdfLocal';
+import UploadDropzone from './components/UploadDropzone';
 
-// ============================================================================
-// TIPOS
-// ============================================================================
-
-type Status = 'pass' | 'warn' | 'fail';
-type SampleKey = 'aura_approved' | 'aura_deviations' | 'multiverso_approved';
-
-interface Rgb {
-  r: number;
-  g: number;
-  b: number;
-}
-
-interface PaletteColor {
-  name: string;
-  hex: string;
-  role: string;
-  expectedShare: string;
-}
-
-// Todos os campos são opcionais: o JSON é editável ao vivo e pode vir incompleto.
-interface BrandRules {
-  brand?: string;
-  palette?: { toleranceDeltaE?: number; colors?: PaletteColor[] };
-  typography?: {
-    primaryFont?: string;
-    secondaryFont?: string;
-    minHierarchyRatio?: number;
-    forbiddenStyles?: string[];
-  };
-  logo?: { clearspaceModule?: string; minMarginPercent?: number; allowedBackgrounds?: string[] };
-  contrast?: { minWcagRatio?: number };
-  artDirection?: { style?: string; toneOfVoice?: string };
-}
-
-interface PresetManual {
-  id: string;
-  name: string;
-  fileName: string;
-  updatedAt: string;
-  rules: BrandRules;
-}
-
-interface ExtractedColor {
-  extractedHex: string;
-  percentage: number;
-  closestOfficial: PaletteColor;
-  deltaE: number;
-  isCompliant: boolean;
-}
-
-interface PixelData {
-  colors: ExtractedColor[];
-  bestContrast: number;
-  contrastPair: string[];
-  dimensions: { width: number; height: number };
-}
-
-interface TypographyAnalysis {
-  detectedStyle: string;
-  confidence: number;
-  matchStatus: Status;
-  hierarchyRatio: string;
-  note: string;
-}
-
-interface Annotation {
-  id: string;
-  type: Status;
-  pillar: string;
-  label: string;
-  detail: string;
-  box: { top: string; left: string; width: string; height: string };
-}
-
-interface ChecklistItem {
-  id: string;
-  pillar: string;
-  title: string;
-  status: Status;
-  metric: string;
-  description: string;
-}
-
-interface AnalysisResult {
-  totalScore: number;
-  pillars: { critical: number; structural: number; aesthetic: number };
-  pixelData: PixelData;
-  typographyAnalysis: TypographyAnalysis;
-  annotations: Annotation[];
-  checklist: ChecklistItem[];
-  timestamp: string;
-}
 
 // ============================================================================
 // 1. DADOS DE EXEMPLO (MANUAIS DE MARCA & REGRAS JSON)
@@ -541,6 +451,10 @@ function extractDominantColorsFromImage(
 // Funções da Vercel aceitam no máximo 4,5 MB de corpo; o PDF vai cru (sem base64).
 const MAX_PDF_BYTES = 4_200_000;
 
+// Validação de arquivos soltos nas dropzones (o seletor nativo já filtra via `accept`)
+const isManualFile = (f: File) => /\.(pdf|json)$/i.test(f.name);
+const isImageFile = (f: File) => /^image\/(png|jpeg|webp)$/.test(f.type);
+
 async function extractRulesFromPdf(file: File): Promise<{ rules: BrandRules; warnings: string[] }> {
   if (file.size > MAX_PDF_BYTES) {
     throw new Error(
@@ -554,7 +468,7 @@ async function extractRulesFromPdf(file: File): Promise<{ rules: BrandRules; war
     body: file
   });
 
-  let data: { rules?: BrandRules; warnings?: string[]; error?: string } | null = null;
+  let data: { rules?: BrandRules; warnings?: string[]; error?: string; detail?: string } | null = null;
   try {
     data = await res.json();
   } catch {
@@ -565,7 +479,8 @@ async function extractRulesFromPdf(file: File): Promise<{ rules: BrandRules; war
     throw new Error('Endpoint /api/extract-manual não encontrado. Em desenvolvimento local use `vercel dev` em vez de `npm run dev`.');
   }
   if (!res.ok || !data?.rules) {
-    throw new Error(data?.error || `Falha na extração (HTTP ${res.status}).`);
+    const base = data?.error || `Falha na extração (HTTP ${res.status}).`;
+    throw new Error(data?.detail ? `${base} Detalhe: ${data.detail}` : base);
   }
   return { rules: data.rules, warnings: data.warnings ?? [] };
 }
@@ -579,6 +494,8 @@ export default function App() {
   );
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [showJsonDrawer, setShowJsonDrawer] = useState(false);
+  // false = leitura local (grátis, só cores e fontes); true = leitura por IA (/api, precisa de chave e crédito)
+  const [useAiReading, setUseAiReading] = useState(false);
   const [manualStatus, setManualStatus] = useState<{
     state: 'idle' | 'loading' | 'ok' | 'error';
     message: string;
@@ -587,7 +504,11 @@ export default function App() {
   // Estado da Peça Criativa (Asset)
   const [assetSource, setAssetSource] = useState<'preset' | 'upload'>('preset');
   const [selectedSampleKey, setSelectedSampleKey] = useState<SampleKey | 'custom_upload'>('aura_approved');
-  const [assetDataUrl, setAssetDataUrl] = useState('');
+  // Já nasce com o exemplo (evita um flash do estado vazio); no SSR/sem DOM começa vazio
+  const [assetDataUrl, setAssetDataUrl] = useState(() =>
+    typeof document === 'undefined' ? '' : generateSampleAssetDataUrl('aura_approved')
+  );
+  const [assetError, setAssetError] = useState<string | null>(null);
   const [assetMeta, setAssetMeta] = useState({
     name: 'aura-campanha-q4-approved.png',
     sizeKb: 142
@@ -640,11 +561,14 @@ export default function App() {
   };
 
   // Upload de manual: .json carrega as regras direto; .pdf é lido por IA no servidor
-  const handleManualFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleManualFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const file = input.files?.[0];
     input.value = ''; // permite reenviar o mesmo arquivo
-    if (!file) return;
+    if (file) void processManualFile(file);
+  };
+
+  const processManualFile = async (file: File) => {
 
     if (file.name.toLowerCase().endsWith('.json')) {
       setCustomManualName(file.name);
@@ -662,16 +586,23 @@ export default function App() {
       return;
     }
 
-    setManualStatus({ state: 'loading', message: `Lendo ${file.name}… (pode levar até ~1 min)` });
+    setManualStatus({
+      state: 'loading',
+      message: useAiReading ? `Lendo ${file.name} com IA… (pode levar até ~1 min)` : `Lendo ${file.name}…`
+    });
     try {
-      const { rules, warnings } = await extractRulesFromPdf(file);
+      const { rules, warnings } = useAiReading
+        ? await extractRulesFromPdf(file)
+        : await extractRulesFromPdfLocal(file, (done, total) =>
+            setManualStatus({ state: 'loading', message: `Lendo ${file.name}… página ${Math.min(done + 1, total)} de ${total}` })
+          );
       setCustomManualName(file.name);
       setRulesJsonText(JSON.stringify(rules, null, 2));
       setShowJsonDrawer(true); // abre o JSON para revisão humana
-      setManualStatus({
-        state: 'ok',
-        message: ['Regras extraídas. Revise o JSON antes de confiar no score.', ...warnings].join(' ')
-      });
+      const intro = useAiReading
+        ? 'Regras extraídas por IA. Revise o JSON antes de confiar no score.'
+        : 'Leitura local: só cores (hex/RGB) e fontes embutidas. Nomes das cores são palpite; papéis, logo, contraste e tom de voz não são lidos. Complete e revise o JSON.';
+      setManualStatus({ state: 'ok', message: [intro, ...warnings].join(' ') });
     } catch (err) {
       setManualStatus({ state: 'error', message: err instanceof Error ? err.message : String(err) });
     }
@@ -681,6 +612,7 @@ export default function App() {
   const handleLoadSampleAsset = (sampleKey: SampleKey) => {
     setAssetSource('preset');
     setSelectedSampleKey(sampleKey);
+    setAssetError(null);
     const url = generateSampleAssetDataUrl(sampleKey);
     setAssetDataUrl(url);
 
@@ -700,6 +632,7 @@ export default function App() {
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
+      setAssetError(null);
       setAssetSource('upload');
       setSelectedSampleKey('custom_upload');
       setAssetDataUrl(ev.target?.result as string);
@@ -1178,18 +1111,46 @@ export default function App() {
                 })}
               </div>
 
+              {!customManualName && (
+                <UploadDropzone
+                  tone="emerald"
+                  icon={<FileText size={18} />}
+                  title="Nenhum manual enviado"
+                  hint="Arraste um PDF ou JSON aqui, ou clique para escolher"
+                  accept={isManualFile}
+                  rejectMessage="Formato não suportado. Envie um .pdf ou .json."
+                  onFile={(f) => void processManualFile(f)}
+                  onBrowse={() => manualInputRef.current?.click()}
+                  busy={manualStatus.state === 'loading'}
+                  busyLabel={manualStatus.message}
+                />
+              )}
+
               {customManualName && (
                 <div className="px-3 py-2 rounded bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs font-mono">
                   <span className="text-emerald-300 truncate">
                     Arquivo carregado: {customManualName}
                   </span>
                   <span className="text-emerald-400 shrink-0">
-                    {customManualName.toLowerCase().endsWith('.json') ? 'JSON carregado' : 'Extraído por IA • revise'}
+                    {customManualName.toLowerCase().endsWith('.json') ? 'JSON carregado' : 'Extraído do PDF • revise'}
                   </span>
                 </div>
               )}
 
-              {manualStatus.state !== 'idle' && (
+              <label className="flex items-start gap-2 text-[11px] font-mono text-[#8B8B95] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={useAiReading}
+                  onChange={(e) => setUseAiReading(e.target.checked)}
+                  className="mt-0.5 accent-emerald-500"
+                />
+                <span>
+                  Ler PDF com IA (precisa de chave e crédito; entende papéis, logo e tom). Desmarcado: leitura local grátis,
+                  só cores e fontes.
+                </span>
+              </label>
+
+              {manualStatus.state !== 'idle' && !(manualStatus.state === 'loading' && !customManualName) && (
                 <div
                   className={`px-3 py-2 rounded border flex items-start gap-2 text-xs font-mono ${
                     manualStatus.state === 'error'
@@ -1330,6 +1291,19 @@ export default function App() {
                 </button>
               </div>
 
+              {assetSource !== 'upload' && (
+                <UploadDropzone
+                  tone="sky"
+                  icon={<ImageIcon size={18} />}
+                  title="Nenhuma peça sua enviada"
+                  hint="Arraste um PNG, JPG ou WebP aqui, ou clique para escolher"
+                  accept={isImageFile}
+                  rejectMessage="Formato não suportado. Envie PNG, JPG ou WebP."
+                  onFile={handleAssetUpload}
+                  onBrowse={() => assetInputRef.current?.click()}
+                />
+              )}
+
               <div className="pt-2 border-t border-[#1E1E24] flex items-center justify-between text-[11px] font-mono text-[#A1A1AA]">
                 <span className="truncate">
                   ATIVO: <strong className="text-[#FAFAFA]">{assetMeta.name}</strong>
@@ -1373,6 +1347,36 @@ export default function App() {
 
             {/* Palco da Imagem */}
             <div className="p-4 sm:p-6 bg-[#09090B] flex items-center justify-center min-h-[340px]">
+              {!assetDataUrl || assetError ? (
+                <div className="flex flex-col items-center text-center gap-3 max-w-sm py-8">
+                  <div className="w-12 h-12 rounded-full bg-[#14141A] border border-[#27272E] flex items-center justify-center text-[#71717A]">
+                    {assetError ? <AlertTriangle size={20} className="text-rose-300" /> : <ImageIcon size={20} />}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-[#E4E4E7]">
+                      {assetError ? 'Não foi possível abrir a imagem' : 'Nenhuma peça carregada'}
+                    </div>
+                    <p className="text-xs text-[#8B8B95] mt-1">
+                      {assetError ?? 'Suba um PNG, JPG ou WebP, ou carregue um exemplo, para ver o diagnóstico de marca.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => assetInputRef.current?.click()}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-xs font-mono text-sky-300 transition-colors"
+                    >
+                      <Upload size={13} />
+                      <span>Subir peça</span>
+                    </button>
+                    <button
+                      onClick={() => handleLoadSampleAsset('aura_approved')}
+                      className="px-2.5 py-1.5 rounded bg-[#1A1A20] hover:bg-[#24242C] border border-[#2E2E38] text-xs font-mono text-[#E4E4E7] transition-colors"
+                    >
+                      Usar exemplo
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <div className="relative inline-block max-w-full rounded overflow-hidden border border-[#27272E] shadow-2xl">
                 {assetDataUrl && (
                   <img
@@ -1380,6 +1384,10 @@ export default function App() {
                     src={assetDataUrl}
                     alt="Peça em análise"
                     onLoad={runBrandAudit}
+                    onError={() => {
+                      setAssetError('O arquivo não pôde ser lido como imagem. Tente outro PNG, JPG ou WebP.');
+                      setAnalysisResult(null);
+                    }}
                     className="block max-h-[480px] w-auto max-w-full object-contain select-none"
                   />
                 )}
@@ -1427,6 +1435,7 @@ export default function App() {
                     );
                   })}
               </div>
+              )}
             </div>
 
             {/* Legenda das Anotações Clicáveis */}
@@ -1468,6 +1477,23 @@ export default function App() {
 
           {/* COLUNA DIREITA (5 COLS): BRAND SCORE & TELEMETRIA ANALÍTICA */}
           <div className="lg:col-span-5 space-y-4">
+            {/* ESTADO VAZIO: ainda sem diagnóstico */}
+            {!analysisResult && (
+              <div className="bg-[#121215] border border-dashed border-[#2A2A32] rounded-lg p-6 flex flex-col items-center text-center gap-2">
+                {isAnalyzing ? (
+                  <RefreshCw size={20} className="animate-spin text-[#A1A1AA]" />
+                ) : (
+                  <Layers size={20} className="text-[#71717A]" />
+                )}
+                <div className="text-sm font-semibold text-[#E4E4E7]">
+                  {isAnalyzing ? 'Analisando a peça…' : 'Sem diagnóstico ainda'}
+                </div>
+                <p className="text-xs text-[#8B8B95] max-w-xs">
+                  O Brand Score, o checklist e o relatório aparecem aqui assim que uma peça for analisada.
+                </p>
+              </div>
+            )}
+
             {/* CARD PRINCIPAL DE SCORE */}
             {analysisResult && scoreTheme && (
               <div className="bg-[#121215] border border-[#242429] rounded-lg p-5 space-y-5">
