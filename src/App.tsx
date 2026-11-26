@@ -534,6 +534,42 @@ function extractDominantColorsFromImage(
 // 4. COMPONENTE PRINCIPAL: BRAND-O-CHECKER MVP
 // ============================================================================
 
+// ============================================================================
+// 3.1 LEITURA REAL DO MANUAL (PDF -> regras JSON via /api/extract-manual)
+// ============================================================================
+
+// Funções da Vercel aceitam no máximo 4,5 MB de corpo; o PDF vai cru (sem base64).
+const MAX_PDF_BYTES = 4_200_000;
+
+async function extractRulesFromPdf(file: File): Promise<{ rules: BrandRules; warnings: string[] }> {
+  if (file.size > MAX_PDF_BYTES) {
+    throw new Error(
+      `PDF com ${(file.size / 1048576).toFixed(1)} MB. O limite é ~4 MB: comprima o arquivo ou exporte só as páginas de identidade (cores, tipografia, logo).`
+    );
+  }
+
+  const res = await fetch('/api/extract-manual', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/pdf' },
+    body: file
+  });
+
+  let data: { rules?: BrandRules; warnings?: string[]; error?: string } | null = null;
+  try {
+    data = await res.json();
+  } catch {
+    // resposta não-JSON (ex.: 404 do Vite em dev)
+  }
+
+  if (res.status === 404 && !data) {
+    throw new Error('Endpoint /api/extract-manual não encontrado. Em desenvolvimento local use `vercel dev` em vez de `npm run dev`.');
+  }
+  if (!res.ok || !data?.rules) {
+    throw new Error(data?.error || `Falha na extração (HTTP ${res.status}).`);
+  }
+  return { rules: data.rules, warnings: data.warnings ?? [] };
+}
+
 export default function App() {
   // Estado do Manual de Marca
   const [selectedManualKey, setSelectedManualKey] = useState('aura_tech');
@@ -543,6 +579,10 @@ export default function App() {
   );
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [showJsonDrawer, setShowJsonDrawer] = useState(false);
+  const [manualStatus, setManualStatus] = useState<{
+    state: 'idle' | 'loading' | 'ok' | 'error';
+    message: string;
+  }>({ state: 'idle', message: '' });
 
   // Estado da Peça Criativa (Asset)
   const [assetSource, setAssetSource] = useState<'preset' | 'upload'>('preset');
@@ -586,6 +626,7 @@ export default function App() {
   const handleSelectManualPreset = (key: string) => {
     setSelectedManualKey(key);
     setCustomManualName(null);
+    setManualStatus({ state: 'idle', message: '' });
     setRulesJsonText(JSON.stringify(PRESET_MANUALS[key].rules, null, 2));
 
     // Se estiver usando preset de peça, ajustar para um exemplo correspondente ao manual
@@ -598,14 +639,16 @@ export default function App() {
     }
   };
 
-  // Upload de arquivo de manual (.json ou .pdf simulado com extração estruturada)
-  const handleManualFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // Upload de manual: .json carrega as regras direto; .pdf é lido por IA no servidor
+  const handleManualFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    input.value = ''; // permite reenviar o mesmo arquivo
     if (!file) return;
 
-    setCustomManualName(file.name);
-
     if (file.name.toLowerCase().endsWith('.json')) {
+      setCustomManualName(file.name);
+      setManualStatus({ state: 'idle', message: '' });
       const reader = new FileReader();
       reader.onload = (ev) => {
         try {
@@ -616,14 +659,21 @@ export default function App() {
         }
       };
       reader.readAsText(file);
-    } else {
-      // Simula parser de PDF extraindo metadados baseados no nome do arquivo
-      const cleanBrand = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-      const simulatedRules = {
-        ...activeRules,
-        brand: cleanBrand.toUpperCase()
-      };
-      setRulesJsonText(JSON.stringify(simulatedRules, null, 2));
+      return;
+    }
+
+    setManualStatus({ state: 'loading', message: `Lendo ${file.name}… (pode levar até ~1 min)` });
+    try {
+      const { rules, warnings } = await extractRulesFromPdf(file);
+      setCustomManualName(file.name);
+      setRulesJsonText(JSON.stringify(rules, null, 2));
+      setShowJsonDrawer(true); // abre o JSON para revisão humana
+      setManualStatus({
+        state: 'ok',
+        message: ['Regras extraídas. Revise o JSON antes de confiar no score.', ...warnings].join(' ')
+      });
+    } catch (err) {
+      setManualStatus({ state: 'error', message: err instanceof Error ? err.message : String(err) });
     }
   };
 
@@ -1086,7 +1136,8 @@ export default function App() {
 
               <button
                 onClick={() => manualInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-[#1A1A20] hover:bg-[#24242C] border border-[#2E2E38] text-xs font-mono text-[#E4E4E7] transition-colors shrink-0"
+                disabled={manualStatus.state === 'loading'}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-[#1A1A20] hover:bg-[#24242C] border border-[#2E2E38] text-xs font-mono text-[#E4E4E7] transition-colors shrink-0 disabled:opacity-50"
               >
                 <Upload size={13} />
                 <span>Subir PDF/JSON</span>
@@ -1132,7 +1183,26 @@ export default function App() {
                   <span className="text-emerald-300 truncate">
                     Arquivo carregado: {customManualName}
                   </span>
-                  <span className="text-emerald-400">Parser ativo</span>
+                  <span className="text-emerald-400 shrink-0">
+                    {customManualName.toLowerCase().endsWith('.json') ? 'JSON carregado' : 'Extraído por IA • revise'}
+                  </span>
+                </div>
+              )}
+
+              {manualStatus.state !== 'idle' && (
+                <div
+                  className={`px-3 py-2 rounded border flex items-start gap-2 text-xs font-mono ${
+                    manualStatus.state === 'error'
+                      ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                      : manualStatus.state === 'ok'
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                      : 'bg-[#0E0E11] border-[#222228] text-[#A1A1AA]'
+                  }`}
+                >
+                  {manualStatus.state === 'loading' && <RefreshCw size={13} className="animate-spin shrink-0 mt-0.5" />}
+                  {manualStatus.state === 'error' && <XCircle size={13} className="shrink-0 mt-0.5" />}
+                  {manualStatus.state === 'ok' && <Info size={13} className="shrink-0 mt-0.5" />}
+                  <span>{manualStatus.message}</span>
                 </div>
               )}
 

@@ -13,7 +13,7 @@ Esta é uma versão de prova de conceito. Vale deixar claro:
 | Contraste WCAG 2.1 entre as cores dominantes | **Real** |
 | Regras editáveis ao vivo (o score recalcula ao mudar o JSON) | **Real** |
 | Exportar relatório em Markdown | **Real** |
-| Leitura de PDF de manual | **Simulada** — só usa o nome do arquivo como nome da marca; as regras continuam as anteriores. Use `.json` para regras reais |
+| Leitura de PDF de manual | **Real, por IA** — o PDF vai para `/api/extract-manual`, que usa a API da Anthropic e devolve o JSON de regras. Pode errar ou omitir campos: sempre revise o JSON (o app o abre automaticamente) |
 | Identificação de tipografia | **Heurística** — não há OCR nem análise de glifos |
 | Área de respiro do logo e tom de voz | **Heurística** — os valores vêm de faixas fixas; nas peças de exemplo, os desvios são pré-definidos |
 
@@ -23,7 +23,7 @@ Requer Node 20+.
 
 ```bash
 npm install
-npm run dev
+npm run dev   # só o front (sem leitura de PDF; veja "Desenvolvimento local")
 ```
 
 Outros comandos:
@@ -32,6 +32,31 @@ Outros comandos:
 npm run typecheck   # tsc --noEmit (modo strict)
 npm run build       # typecheck + build de produção em dist/
 npm run preview     # serve o build localmente
+```
+
+## Leitura de manual por IA (Vercel)
+
+O upload de PDF chama a função `api/extract-manual.ts`, que envia o documento ao modelo e força uma resposta estruturada no formato das regras. A saída é validada (hex normalizados, campos desconhecidos descartados) e campos ausentes no manual ficam de fora em vez de inventados.
+
+**Configuração na Vercel**
+
+1. Em *Settings → Environment Variables*, crie `ANTHROPIC_API_KEY` (e, opcionalmente, `ANTHROPIC_MODEL`).
+2. Faça um novo deploy (variáveis só valem para deploys criados depois de salvas).
+3. Defina um limite de gasto para a chave no console da Anthropic. O endpoint é público: sem isso, qualquer pessoa com a URL pode gerar custo na sua chave. Considere também uma regra de rate limit no Vercel Firewall.
+
+**Limites**
+
+- PDF de até ~4 MB: as funções da Vercel aceitam no máximo 4,5 MB de corpo. Para manuais maiores, comprima o arquivo ou exporte só as páginas de identidade. A API também limita o número de páginas por PDF (100 na documentação consultada).
+- Brandbooks em PDF escaneado ou com muito texto em imagem funcionam pior; revise o resultado.
+
+**Desenvolvimento local**
+
+`npm run dev` serve só o front. Para testar a leitura de PDF localmente:
+
+```bash
+npm i -g vercel
+cp .env.example .env.local   # preencha ANTHROPIC_API_KEY
+vercel dev
 ```
 
 ## Formato das regras (JSON)
@@ -61,6 +86,8 @@ Crítico (paleta + logo) 40% · Estrutural (tipografia + contraste) 35% · Esté
 ## Estrutura
 
 ```
+api/
+  extract-manual.ts  # Vercel Function: PDF -> regras JSON (API da Anthropic)
 src/
   App.tsx      # lógica de cor, motor de auditoria e interface (arquivo único por enquanto)
   main.tsx     # entrypoint
@@ -69,4 +96,4 @@ src/
 
 ## Stack
 
-React 19, TypeScript, Vite, Tailwind CSS v4, lucide-react.
+React 19, TypeScript, Vite, Tailwind CSS v4, lucide-react, Vercel Functions + `@anthropic-ai/sdk`.
